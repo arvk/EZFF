@@ -158,8 +158,9 @@ def read_lattice_constant(outfilename):
     return lattice
 
 
-def read_phonon_dispersion(phonon_dispersion_file):
+def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     pbs = []
+    freq_conversion = {'cm-1': 0.0299792453684314, 'THz': 1, 'eV': 241.79893, 'meV': 0.24180}
     dispersion = open(phonon_dispersion_file, 'r')
     for line in dispersion:
         if not line.strip().startswith('#'):
@@ -168,4 +169,5 @@ def read_phonon_dispersion(phonon_dispersion_file):
     dispersion.close()
     num_bands = int(len(pbs)/100)
     pbs = np.array(pbs).reshape((100,num_bands)).T
+    pbs *= freq_conversion[units]
     return pbs
