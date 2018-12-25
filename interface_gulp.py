@@ -107,3 +107,65 @@ class job:
         os.remove(self.outfile+'.dens')
         os.remove(self.outfile)
         os.remove(self.scriptfile)
+
+
+
+def read_elastic_moduli(outfilename):
+    moduli = np.zeros((6,6))
+    outfile = open(outfilename,'r')
+    for oneline in outfile:
+        if 'Elastic Constant Matrix' in oneline:
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            for i in range(6):
+                moduli[i,:] = outfile.readline().strip().split()[1:]
+            break
+    outfile.close()
+    return moduli
+
+
+def read_lattice_constant(outfilename):
+    abc, ang = np.zeros(3), np.zeros(3)
+    err_abc, err_ang = np.zeros(3), np.zeros(3)
+    outfile = open(outfilename, 'r')
+    for oneline in outfile:
+        if 'Comparison of initial and final' in oneline:
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            while True:
+                data = outfile.readline().strip().split()
+                if data[0] == 'a':
+                    abc[0], err_abc[0] = data[2], data[-1]
+                elif data[0] == 'b':
+                    abc[1], err_abc[1] = data[2], data[-1]
+                elif data[0] == 'c':
+                    abc[2], err_abc[2] = data[2], data[-1]
+                elif data[0] == 'alpha':
+                    ang[0], err_ang[0] = data[2], data[-1]
+                elif data[0] == 'beta':
+                    ang[1], err_ang[1] = data[2], data[-1]
+                elif data[0] == 'gamma':
+                    ang[2], err_ang[2] = data[2], data[-1]
+                elif data[0][0] == '-':
+                    break
+            break
+    outfile.close()
+    lattice = {'abc': abc, 'ang': ang, 'err_abc': err_abc, 'err_ang': err_ang}
+    return lattice
+
+
+def read_phonon_dispersion(phonon_dispersion_file):
+    pbs = []
+    dispersion = open(phonon_dispersion_file, 'r')
+    for line in dispersion:
+        if not line.strip().startswith('#'):
+            _, freq = line.strip().split()
+            pbs.append(float(freq))
+    dispersion.close()
+    num_bands = int(len(pbs)/100)
+    pbs = np.array(pbs).reshape((100,num_bands)).T
+    return pbs
