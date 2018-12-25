@@ -11,6 +11,7 @@ class job:
         self.outfile = 'out.gulp'
         self.command = 'gulp'
         self.forcefield = ''
+        self.temporary_forcefield = False
         self.structure = None
         self.options = {
             "relax_atoms": False,
@@ -31,7 +32,7 @@ class job:
         if parallel:
             command = "mpirun -np " + str(processors) + " " + command
 
-        system_call_command = command + ' < ' + self.scriptfile + ' > ' + self.outfile
+        system_call_command = command + ' < ' + self.scriptfile + ' > ' + self.outfile + ' 2> ' + self.outfile + '.runerror'
 
         if timeout is not None:
             system_call_command = 'timeout ' + str(timeout) + ' ' + system_call_command
@@ -108,6 +109,9 @@ class job:
         os.remove(self.outfile+'.dens')
         os.remove(self.outfile)
         os.remove(self.scriptfile)
+        os.remove(self.outfile+'.runerror')
+        if self.temporary_forcefield:
+            os.remove(self.forcefield)
 
 
 
