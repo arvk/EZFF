@@ -19,7 +19,7 @@ class job:
             "phonon_dispersion_from": None,
             "phonon_dispersion_to": None
             }
-
+        self.verbose = verbose
         if verbose:
             print('Created a new GULP job')
 
@@ -36,7 +36,8 @@ class job:
         if timeout is not None:
             system_call_command = 'timeout ' + str(timeout) + ' ' + system_call_command
 
-        print(system_call_command)
+        if self.verbose:
+            print(system_call_command)
         os.system(system_call_command)
 
 
