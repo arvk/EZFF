@@ -1,5 +1,24 @@
 """This module provide general functions for EZFF"""
 import numpy as np
+from platypus import Problem, Real
+
+class F3(Problem):
+    def __init__(self, num_objectives = None, objective_function = None, variables = None, variable_bounds = None):
+        super(F3, self).__init__(len(variables),num_objectives)
+        for counter, value in enumerate(variables):
+            if value[0] == '_':
+                self.types[counter] = Integer(variable_bounds[value][0], variable_bounds[value][1])
+            else:
+                self.types[counter] = Real(variable_bounds[value][0], variable_bounds[value][1])
+
+        self.objective_function = objective_function
+        self.variables = variables
+
+    def evaluate(self, solution):
+        current_var_dict = dict(zip(self.variables, solution.variables))
+        solution.objectives[:] = self.objective_function(current_var_dict)
+
+
 
 def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
     """Calculate error between MD-computed dispersion and the ground-truth"""
