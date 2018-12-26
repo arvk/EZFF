@@ -13,6 +13,7 @@ class F3(Problem):
 
         self.objective_function = objective_function
         self.variables = variables
+        self.directions = [Problem.MINIMIZE for objective in range(num_objectives)]
 
     def evaluate(self, solution):
         current_var_dict = dict(zip(self.variables, solution.variables))
