@@ -52,7 +52,7 @@ class job:
         return structure
 
 
-    def write_script_file(self):
+    def write_script_file(self, convert_reaxff=None):
         opts = self.options
         script = open(self.scriptfile,'w')
         header_line = ''
@@ -93,12 +93,15 @@ class job:
                 script.write(positions)
         script.write('\n')
 
-        with open(self.forcefield,'r') as forcefield_file:
-            forcefield = forcefield_file.read()
 
-        for line in forcefield.split('\n'):
-            script.write(' '.join(line.split()) + '\n')
-
+        if convert_reaxff is None:
+            with open(self.forcefield,'r') as forcefield_file:
+                forcefield = forcefield_file.read()
+            for line in forcefield.split('\n'):
+                script.write(' '.join(line.split()) + '\n')
+        else:
+            self.forcefield = convert_reaxff(self.forcefield)
+            script.write('library ' + self.forcefield)
         script.write('\n')
 
         if opts['phonon_dispersion_from'] is not None:
@@ -114,13 +117,13 @@ class job:
 
 
     def cleanup(self):
-        os.remove(self.outfile+'.disp')
-        os.remove(self.outfile+'.dens')
-        os.remove(self.outfile)
-        os.remove(self.scriptfile)
-        os.remove(self.outfile+'.runerror')
+        files_to_be_removed = [self.outfile+'.disp', self.outfile+'.dens', self.outfile, self.scriptfile, self.outfile+'.runerror']
+        for file in files_to_be_removed:
+            if os.path.isfile(file):
+                os.remove(file)
         if self.temporary_forcefield:
-            os.remove(self.forcefield)
+            if os.path.isfile(self.forcefield):
+                os.remove(self.forcefield)
 
 
 
@@ -177,8 +180,8 @@ def read_energy(outfilename):
         if 'Total lattice energy' in line:
             if line.strip().split()[-1] == 'eV':
                 energy_in_eV = float(line.strip().split()[-2])
-    outfile.close()
     return energy_in_eV
+    outfile.close()
 
 def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     pbs = []
