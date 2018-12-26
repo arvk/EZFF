@@ -13,6 +13,7 @@ class job:
         self.forcefield = ''
         self.temporary_forcefield = False
         self.structure = None
+        self.pbc = False
         self.options = {
             "relax_atoms": False,
             "relax_cell": False,
@@ -74,14 +75,22 @@ class job:
 
         script.write('\n')
 
-        script.write('vectors\n')
-        script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
-        script.write('Fractional\n')
-        for atom in self.structure.snaplist[0].atomlist:
-            positions = atom.element.title() + ' core '
-            positions += np.array_str(atom.fract).replace('[','').replace(']','')
-            positions += ' 0.0   1.0   0.0   1 1 1 \n'
-            script.write(positions)
+        if self.pbc:
+            script.write('vectors\n')
+            script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
+            script.write('Fractional\n')
+            for atom in self.structure.snaplist[0].atomlist:
+                positions = atom.element.title() + ' core '
+                positions += np.array_str(atom.fract).replace('[','').replace(']','')
+                positions += ' 0.0   1.0   0.0   1 1 1 \n'
+                script.write(positions)
+        else:
+            script.write('Cartesian\n')
+            for atom in self.structure.snaplist[0].atomlist:
+                positions = atom.element.title() + ' core '
+                positions += np.array_str(atom.cart).replace('[','').replace(']','')
+                positions += ' 0.0   1.0   0.0   1 1 1 \n'
+                script.write(positions)
         script.write('\n')
 
         with open(self.forcefield,'r') as forcefield_file:
