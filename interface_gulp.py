@@ -171,6 +171,14 @@ def read_lattice_constant(outfilename):
     lattice = {'abc': abc, 'ang': ang, 'err_abc': err_abc, 'err_ang': err_ang}
     return lattice
 
+def read_energy(outfilename):
+    outfile = open(outfilename, 'r')
+    for line in outfile:
+        if 'Total lattice energy' in line:
+            if line.strip().split()[-1] == 'eV':
+                energy_in_eV = float(line.strip().split()[-2])
+    outfile.close()
+    return energy_in_eV
 
 def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     pbs = []
