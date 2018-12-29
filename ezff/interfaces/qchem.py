@@ -1,8 +1,7 @@
 """Interface to Q-Chem, the ab initio quantum chemistry package"""
 import numpy as np
 import xtal
-
-energy_conversion = {'HatoeV':27.211, 'Hatokcal': 627.5}
+from ezff.utils import convert_units as convert
 
 def read_ground_state(outfilename):
     structure = xtal.AtTraj()
@@ -15,7 +14,7 @@ def read_ground_state(outfilename):
             energy_in_Hartrees = float(line.strip().split()[-1])
             break
 
-    snapshot.energy = energy_in_Hartrees*energy_conversion['HatoeV']
+    snapshot.energy = energy_in_Hartrees * convert.energy['Ha']['eV']
 
     for line in outfile:
         if 'OPTIMIZATION CONVERGED' in line:
@@ -54,7 +53,7 @@ def read_scan(outfilename):
     for line in outfile:
         if 'Final energy is' in line:
             energy_in_Hartrees = float(line.strip().split()[-1])
-            energies.append(energy_in_Hartrees*energy_conversion['HatoeV'])
+            energies.append(energy_in_Hartrees * convert.energy['Ha']['eV'])
     outfile.close()
 
     # Read structure

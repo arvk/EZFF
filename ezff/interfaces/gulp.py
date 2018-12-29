@@ -2,6 +2,7 @@
 import os
 import xtal
 import numpy as np
+from ezff.utils import convert_units as convert
 
 class job:
     """A single GULP job"""
@@ -194,5 +195,5 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     dispersion.close()
     num_bands = int(len(pbs)/100)
     pbs = np.array(pbs).reshape((100,num_bands)).T
-    pbs *= freq_conversion[units]
+    pbs *= convert.frequency[units]['THz']
     return pbs
