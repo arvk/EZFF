@@ -1,5 +1,6 @@
 """This module provide general functions for EZFF"""
 import numpy as np
+import xtal
 from platypus import Problem, Real
 
 class F3(Problem):
@@ -47,3 +48,12 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
 
     rms_error /= (num_k_gt * num_band)
     return rms_error
+
+
+def read_atomic_structure(structure_file):
+    structure = xtal.AtTraj(verbose=False)
+
+    if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
+        structure.read_snapshot_vasp(structure_file)
+
+    return structure
