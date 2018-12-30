@@ -7,8 +7,13 @@ from ezff.utils import convert_units as convert
 class job:
     """A single GULP job"""
 
-    def __init__(self, verbose=False):
-        self.scriptfile = 'in.gulp'
+    def __init__(self, verbose=False, path='.'):
+        if not os.path.isdir(path):
+            if verbose:
+                print('Path for current job is not valid . Creating a new directory...')
+            os.makedirs(path)
+        self.path = path
+        self.scriptfile ='in.gulp'
         self.outfile = 'out.gulp'
         self.command = 'gulp'
         self.forcefield = ''
@@ -40,8 +45,8 @@ class job:
             system_call_command = 'timeout ' + str(timeout) + ' ' + system_call_command
 
         if self.verbose:
-            print(system_call_command)
-        os.system(system_call_command)
+            print('cd '+ self.path + ' ; ' + system_call_command)
+        os.system('cd '+ self.path + ' ; ' + system_call_command)
 
 
     def read_atomic_structure(self,structure_file):
@@ -55,7 +60,7 @@ class job:
 
     def write_script_file(self, convert_reaxff=None):
         opts = self.options
-        script = open(self.scriptfile,'w')
+        script = open(self.path+'/'+self.scriptfile,'w')
         header_line = ''
         if opts['relax_atoms']:
             header_line += 'optimise '
@@ -122,6 +127,8 @@ class job:
         for file in files_to_be_removed:
             if os.path.isfile(file):
                 os.remove(file)
+            elif os.path.isfile(self.path+'/'+file):
+                os.remove(self.path+'/'+file)
         if self.temporary_forcefield:
             if os.path.isfile(self.forcefield):
                 os.remove(self.forcefield)
