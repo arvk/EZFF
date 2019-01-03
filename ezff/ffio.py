@@ -36,7 +36,7 @@ def write_forcefield_file(filename, template_string, parameters, verbose=False):
     for key, ranges in parameters.items():
         pattern = '<<' + key + '>>'
         while pattern in template_string:
-            template_string = template_string.replace(pattern, str(ranges))
+            template_string = template_string.replace(pattern, '%12.6f' % ranges)
             if verbose:
                 replaced_keys += key + ', '
 
