@@ -145,7 +145,17 @@ def read_elastic_moduli(outfilename):
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             for i in range(6):
-                moduli[i,:] = outfile.readline().strip().split()[1:]
+                modline = outfile.readline().strip()
+                e1, e2, e3, e4, e5, e6 = modline[3:13], modline[13:23], modline[23:33], modline[33:43], modline[43:53], modline[53:63]
+                modarray = [e1,e2,e3,e4,e5,e6]
+                float_modarray = []
+                # Handle errors
+                for element in modarray:
+                    if element[0] == "*":
+                        float_modarray.append(0.0)
+                    else:
+                        float_modarray.append(float(element))
+                moduli[i,:] = float_modarray
             break
     outfile.close()
     return moduli
