@@ -207,8 +207,11 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     dispersion = open(phonon_dispersion_file, 'r')
     for line in dispersion:
         if not line.strip().startswith('#'):
-            _, freq = line.strip().split()
-            pbs.append(float(freq))
+            str_index, str_freq = line[:4], line[4:]
+            if not str_freq[0] == '*':
+                pbs.append(float(str_freq))
+            else:
+                pbs.append(0.0)
     dispersion.close()
     num_bands = int(len(pbs)/100)
     pbs = np.array(pbs).reshape((100,num_bands)).T
