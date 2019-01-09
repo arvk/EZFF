@@ -175,6 +175,6 @@ def my_obj_function(rr):
     return [latt_error, modulus_error, phon_error_relax, phon_error_compressed, phon_error_expanded]
 
 
-problem = ezff.Problem(variables = variables, num_objectives = 5, variable_bounds = bounds, objective_function = my_obj_function)
+problem = ezff.Problem(variables = variables, num_objectives = 5, variable_bounds = bounds, objective_function = my_obj_function, template = template)
 algorithm = ezff.Algorithm(problem, 'NSGAII', population = 16)
-ezff.optimize(algorithm, iterations = 10)
+ezff.optimize(problem, algorithm, iterations = 10)

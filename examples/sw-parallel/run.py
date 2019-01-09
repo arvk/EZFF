@@ -176,7 +176,7 @@ def my_obj_function(rr):
 
 
 pool = ezff.Pool()
-problem = ezff.Problem(variables = variables, num_objectives = 5, variable_bounds = bounds, objective_function = my_obj_function)
+problem = ezff.Problem(variables = variables, num_objectives = 5, variable_bounds = bounds, objective_function = my_obj_function, template = template)
 algorithm = ezff.Algorithm(problem, 'NSGAII', population = 128, pool = pool)
-ezff.optimize(algorithm, iterations = 10)
+ezff.optimize(problem, algorithm, iterations = 10)
 pool.close()
