@@ -68,11 +68,15 @@ def read_atomic_structure(structure_file):
 
 def optimize(algorithm, iterations = 100):
     for i in range(0,iterations):
-        print('In step '+ str(i))
+        print('Epoch: '+ str(i))
         algorithm.step()
-        fulldumpfilename = 'results/fulldump.' + str(i)
-        varfilename = 'results/variables.' + str(i)
-        objfilename = 'results/objectives.' + str(i)
+
+        # Make output files/directories
+        outdir = 'results/' + str(i)
+        if not os.path.isdir(outdir):
+            os.makedirs(outdir)
+
+        fulldumpfilename = outdir + '/fulldump'
         fulldumpfile = open(fulldumpfilename,'w')
         for solution in algorithm.result:
             fulldumpfile.write(' '.join([str(variables) for variables in solution.variables]))
@@ -80,6 +84,9 @@ def optimize(algorithm, iterations = 100):
             fulldumpfile.write(' '.join([str(objectives) for objectives in solution.objectives]))
             fulldumpfile.write('\n')
         fulldumpfile.close()
+
+        varfilename = outdir + '/variables'
+        objfilename = outdir + '/objectives'
         varfile = open(varfilename,'w')
         objfile = open(objfilename,'w')
         for solution in unique(nondominated(algorithm.result)):
