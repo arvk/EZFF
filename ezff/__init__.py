@@ -8,22 +8,22 @@ import sys
 from .ffio import write_forcefield_file
 
 class Problem(Problem):
-    def __init__(self, num_objectives = None, objective_function = None, variables = None, variable_bounds = None, template = None):
-        super(Problem, self).__init__(len(variables),num_objectives)
+    def __init__(self, num_errors = None, error_function = None, variables = None, variable_bounds = None, template = None):
+        super(Problem, self).__init__(len(variables),num_errors)
         for counter, value in enumerate(variables):
             if value[0] == '_':
                 self.types[counter] = Integer(variable_bounds[value][0], variable_bounds[value][1])
             else:
                 self.types[counter] = Real(variable_bounds[value][0], variable_bounds[value][1])
 
-        self.objective_function = objective_function
+        self.error_function = error_function
         self.variables = variables
-        self.directions = [Problem.MINIMIZE for objective in range(num_objectives)]
+        self.directions = [Problem.MINIMIZE for error in range(num_errors)]
         self.template = template
 
     def evaluate(self, solution):
         current_var_dict = dict(zip(self.variables, solution.variables))
-        solution.objectives[:] = self.objective_function(current_var_dict)
+        solution.objectives[:] = self.error_function(current_var_dict)
 
 
 class Pool(MPIPool):
@@ -81,13 +81,13 @@ def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
             os.makedirs(outdir)
 
         varfilename = outdir + '/variables'
-        objfilename = outdir + '/objectives'
+        objfilename = outdir + '/errors'
         varfile = open(varfilename,'w')
         objfile = open(objfilename,'w')
         for solution in unique(nondominated(algorithm.result)):
             varfile.write(' '.join([str(variables) for variables in solution.variables]))
             varfile.write('\n')
-            objfile.write(' '.join([str(objectives) for objectives in solution.objectives]))
+            objfile.write(' '.join([str(objective) for objective in solution.objectives]))
             objfile.write('\n')
         varfile.close()
         objfile.close()
@@ -109,7 +109,7 @@ def pick_algorithm(myproblem, algorithm, population = 1024, evaluator = None):
         else:
             return NSGAII(myproblem, population_size = population, evaluator = evaluator)
     elif algorithm.lower().upper() == 'NSGAIII':
-        divisions = int(np.power(population * np.math.factorial(num_objectives-1),1.0/(num_objectives-1))) + 2 - num_objectives
+        divisions = int(np.power(population * np.math.factorial(num_errors-1),1.0/(num_errors-1))) + 2 - num_errors
         divisions = np.maximum(1,divisions)
         if evaluator is None:
             return NSGAIII(myproblem, divisions_outer = divisions)

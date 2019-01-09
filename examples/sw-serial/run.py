@@ -30,7 +30,7 @@ gt_compressed_disp_KG = vasp.read_phonon_dispersion('ground_truths/compressed/KG
 gt_compressed_structure = ezff.read_atomic_structure('ground_truths/compressed/POSCAR')
 
 
-def my_obj_function(rr):
+def my_error_function(rr):
     # Get rank from pool
     try:
         myrank = pool.rank
@@ -175,6 +175,6 @@ def my_obj_function(rr):
     return [latt_error, modulus_error, phon_error_relax, phon_error_compressed, phon_error_expanded]
 
 
-problem = ezff.Problem(variables = variables, num_objectives = 5, variable_bounds = bounds, objective_function = my_obj_function, template = template)
-algorithm = ezff.Algorithm(problem, 'NSGAII', population = 16)
+problem = ezff.Problem(variables = variables, num_errors = 5, variable_bounds = bounds, error_function = my_error_function, template = template)
+algorithm = ezff.Algorithm(problem, 'NSGAII', population = 4)
 ezff.optimize(problem, algorithm, iterations = 10)
