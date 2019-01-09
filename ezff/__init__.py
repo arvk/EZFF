@@ -5,9 +5,10 @@ from platypus import Problem, Real, unique, nondominated, NSGAII, NSGAIII, IBEA,
 from platypus.mpipool import MPIPool
 import os
 import sys
+from .ffio import write_forcefield_file
 
 class Problem(Problem):
-    def __init__(self, num_objectives = None, objective_function = None, variables = None, variable_bounds = None):
+    def __init__(self, num_objectives = None, objective_function = None, variables = None, variable_bounds = None, template = None):
         super(Problem, self).__init__(len(variables),num_objectives)
         for counter, value in enumerate(variables):
             if value[0] == '_':
@@ -18,6 +19,7 @@ class Problem(Problem):
         self.objective_function = objective_function
         self.variables = variables
         self.directions = [Problem.MINIMIZE for objective in range(num_objectives)]
+        self.template = template
 
     def evaluate(self, solution):
         current_var_dict = dict(zip(self.variables, solution.variables))
@@ -66,7 +68,9 @@ def read_atomic_structure(structure_file):
     return structure
 
 
-def optimize(algorithm, iterations = 100):
+def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
+    if not isinstance(write_forcefields, int):
+        write_forcefields = iterations
     for i in range(0,iterations):
         print('Epoch: '+ str(i))
         algorithm.step()
@@ -87,6 +91,15 @@ def optimize(algorithm, iterations = 100):
             objfile.write('\n')
         varfile.close()
         objfile.close()
+
+        if i % (write_forcefields-1) == 0:
+            if not os.path.isdir(outdir+'/forcefields'):
+                os.makedirs(outdir+'/forcefields')
+            for sol_index, solution in enumerate(unique(nondominated(algorithm.result))):
+                ff_name = outdir + '/forcefields/FF_' + str(sol_index)
+                parameters_dict = dict(zip(problem.variables, solution.variables))
+                write_forcefield_file(ff_name,problem.template,parameters_dict,verbose=False)
+
 
 
 def pick_algorithm(myproblem, algorithm, population = 1024, evaluator = None):
