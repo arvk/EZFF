@@ -76,15 +76,6 @@ def optimize(algorithm, iterations = 100):
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
 
-        fulldumpfilename = outdir + '/fulldump'
-        fulldumpfile = open(fulldumpfilename,'w')
-        for solution in algorithm.result:
-            fulldumpfile.write(' '.join([str(variables) for variables in solution.variables]))
-            fulldumpfile.write(' | ')
-            fulldumpfile.write(' '.join([str(objectives) for objectives in solution.objectives]))
-            fulldumpfile.write('\n')
-        fulldumpfile.close()
-
         varfilename = outdir + '/variables'
         objfilename = outdir + '/objectives'
         varfile = open(varfilename,'w')
