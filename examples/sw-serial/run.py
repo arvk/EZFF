@@ -1,16 +1,14 @@
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 import ezff
 import ezff.ffio as ffio
-from ezff.interfaces import vasp
-from ezff.interfaces import gulp
+from ezff.interfaces import vasp, gulp
 import numpy as np
-from platypus import NSGAII
 import logging
 logging.basicConfig(level=logging.INFO)
 
-r = ffio.read_parameter_bounds('params_range', verbose=False)
-variables = [key for key in r.keys()]
+bounds = ffio.read_parameter_bounds('params_range', verbose=False)
+variables = [key for key in bounds.keys()]
 template = ffio.read_parameter_template('template')
 
 
@@ -33,12 +31,18 @@ gt_compressed_structure = ezff.read_atomic_structure('ground_truths/compressed/P
 
 
 def my_obj_function(rr):
-    ffio.write_forcefield_file('HH',template,rr,verbose=False)
+    # Get rank from pool
+    try:
+        myrank = pool.rank
+    except:
+        myrank = 0
+
+    ffio.write_forcefield_file(str(myrank)+'/HH',template,rr,verbose=False)
 
     # FOR THE RELAXED STRUCTURE
-    path = 'relaxed'
+    path = str(myrank)+'/relaxed'
     relaxed_job = gulp.job(path=path)
-    relaxed_job.forcefield = 'HH'
+    relaxed_job.forcefield = str(myrank)+'/HH'
     relaxed_job.temporary_forcefield = False
     relaxed_job.structure = gt_relax_structure
     relaxed_job.pbc = True
@@ -78,16 +82,16 @@ def my_obj_function(rr):
     phon_error_KG = ezff.error_phonon_dispersion(md_relax_disp_KG, gt_relax_disp_KG, weights='uniform')
     phon_error_relax = np.linalg.norm([phon_error_GM, phon_error_MK, phon_error_KG])
 
-    #relaxed_job.cleanup()  # FINISH RELAXED JOB
+    relaxed_job.cleanup()  # FINISH RELAXED JOB
 
 
 
 
 
     # FOR THE COMPRESSED STRUCTURE
-    path = 'compressed'
+    path = str(myrank)+'/compressed'
     compressed_job = gulp.job(path=path)
-    compressed_job.forcefield = 'HH'
+    compressed_job.forcefield = str(myrank)+'/HH'
     compressed_job.temporary_forcefield = False
     compressed_job.structure = gt_compressed_structure
     compressed_job.pbc = True
@@ -121,7 +125,7 @@ def my_obj_function(rr):
     phon_error_KG = ezff.error_phonon_dispersion(md_compressed_disp_KG, gt_compressed_disp_KG, weights='uniform')
     phon_error_compressed = np.linalg.norm([phon_error_GM, phon_error_MK, phon_error_KG])
 
-    #compressed_job.cleanup()  # FINISH RELAXED JOB
+    compressed_job.cleanup()  # FINISH RELAXED JOB
 
 
 
@@ -129,9 +133,9 @@ def my_obj_function(rr):
 
 
     # FOR THE EXPANDED STRUCTURE
-    path = 'expanded'
+    path = str(myrank)+'/expanded'
     expanded_job = gulp.job(path=path)
-    expanded_job.forcefield = 'HH'
+    expanded_job.forcefield = str(myrank)+'/HH'
     expanded_job.temporary_forcefield = False
     expanded_job.structure = gt_expanded_structure
     expanded_job.pbc = True
@@ -165,19 +169,12 @@ def my_obj_function(rr):
     phon_error_KG = ezff.error_phonon_dispersion(md_expanded_disp_KG, gt_expanded_disp_KG, weights='uniform')
     phon_error_expanded = np.linalg.norm([phon_error_GM, phon_error_MK, phon_error_KG])
 
-    #expanded_job.cleanup()  # FINISH EXPANDED JOB
+    expanded_job.cleanup()  # FINISH EXPANDED JOB
+
 
     return [latt_error, modulus_error, phon_error_relax, phon_error_compressed, phon_error_expanded]
 
 
-
-# define the problem definition
-myproblem = ezff.F3(variables = variables, num_objectives = 5, variable_bounds = r, objective_function = my_obj_function)
-algorithm = NSGAII(myproblem, population_size=10)
-for i in range(0,10):
-    algorithm.step()
-    print('In step '+ str(i))
-
-for solution in algorithm.result:
-    print(solution.objectives)
-
+problem = ezff.Problem(variables = variables, num_objectives = 5, variable_bounds = bounds, objective_function = my_obj_function)
+algorithm = ezff.Algorithm(problem, 'NSGAII', population = 16)
+ezff.optimize(algorithm, iterations = 10)
