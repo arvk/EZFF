@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+import math
 
 class reax_forcefield:
     """
@@ -681,3 +682,337 @@ class reax_forcefield:
                 else:
                     string = '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + ''.join(['%9.4f' % float(val) for val in line[3:]]) + '\n'
                 outfile.write(string)
+
+
+    def write_gulp_library(self, outfilename):
+        """
+        Function to write-out the forcefield in the GULP library format
+
+        :param outfilename: File to which the GULP ReaxFF forcefield library
+        :type outfilename: str
+        """
+        with open(outfilename, 'w') as libfile:
+            # HEADER
+            string = ''
+            string += '#\n'
+            string += '#  ReaxFF force field\n'
+            string += '#\n'
+            string += '#  Original paper:\n'
+            string += '#\n'
+            string += '#  A.C.T. van Duin, S. Dasgupta, F. Lorant and W.A. Goddard III,\n'
+            string += '#  J. Phys. Chem. A, 105, 9396-9409 (2001)\n'
+            string += '#\n'
+            string += '#\n'
+            libfile.write(string)
+
+            # CUTOFFS
+            string = ''
+            string += '#  Cutoffs for VDW & Coulomb terms\n'
+            string += '#\n'
+            string += 'reaxFFvdwcutoff %12.4f\n' % float(self.general[13][0])
+            string += 'reaxFFqcutoff   %12.4f\n' % float(self.general[13][0])
+            string += '#\n'
+            libfile.write(string)
+
+            #BOND ORDER THRESHOLD
+            string = ''
+            string += '#  Bond order threshold - check anglemin as this is cutof2 given in control file\n'
+            string += '#\n'
+            string += 'reaxFFtol       %12.10f 0.001\n' % (float(self.general[30][0])*0.01)
+            string += '#\n'
+            libfile.write(string)
+
+            #SPECIES INDEPENDENT PARAMETERS
+            string = ''
+            string += '#  Species independent parameters \n'
+            string += '#\n'
+            string += 'reaxff0_bond     %12.6f %12.6f\n' %(float(self.general[1][0]), float(self.general[2][0]))
+            string += 'reaxff0_over     %12.6f %12.6f %12.6f %12.6f %12.6f\n' %(float(self.general[33][0]), float(self.general[32][0]), float(self.general[7][0]), float(self.general[9][0]), float(self.general[10][0]))
+            string += 'reaxff0_valence  %12.6f %12.6f %12.6f %12.6f\n' %(float(self.general[15][0]), float(self.general[34][0]), float(self.general[17][0]), float(self.general[18][0]))
+            string += 'reaxff0_penalty  %12.6f %12.6f %12.6f\n' %(float(self.general[20][0]), float(self.general[21][0]), float(self.general[22][0]))
+            string += 'reaxff0_torsion  %12.6f %12.6f %12.6f %12.6f\n' %(float(self.general[24][0]), float(self.general[25][0]), float(self.general[26][0]), float(self.general[28][0]))
+            string += 'reaxff0_vdw      %12.6f\n' % float(self.general[29][0])
+            string += 'reaxff0_lonepair %12.6f\n' % float(self.general[16][0])
+            string += '#\n'
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - RADII
+            string = ''
+            string += '#  Species parameters \n'
+            string += '#\n'
+            string += 'reaxff1_radii\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f %8.4f %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno][1]), float(self.onebody[lineno][7]), float(self.onebody[lineno+2][0]))
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - VALENCE
+            string = ''
+            string += 'reaxff1_valence\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f %8.4f %8.4f %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno][2]), float(self.onebody[lineno+3][3]), float(self.onebody[lineno][8]), float(self.onebody[lineno+1][2]))
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - OVER
+            string = ''
+            string += 'reaxff1_over\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f %8.4f %8.4f %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno+2][4]), float(self.onebody[lineno+2][3]), float(self.onebody[lineno+2][5]), float(self.onebody[lineno+3][0]))
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - UNDER KCAL
+            string = ''
+            string += 'reaxff1_under kcal\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno+1][3]))
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - LONEPAIR KCAL
+            string = ''
+            string += 'reaxff1_lonepair kcal\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f %8.4f\n' % (self.onebody[lineno][0], 0.5*(float(self.onebody[lineno][8]) - float(self.onebody[lineno][2])), float(self.onebody[lineno+2][1]))
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - ANGLE
+            string = ''
+            string += 'reaxff1_angle\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno+3][1]), float(self.onebody[lineno+3][4]))
+            libfile.write(string)
+
+            #SPECIES PARAMETERS - ANGLE
+            string = ''
+            string += 'reaxff1_morse kcal\n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f %8.4f %8.4f %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno+1][0]), float(self.onebody[lineno][5]), float(self.onebody[lineno][4]), float(self.onebody[lineno+1][1]))
+            libfile.write(string)
+
+            #ELEMENT PARAMETERS
+            string = '#\n'
+            string += '#  Element parameters \n'
+            string += '#\n'
+            libfile.write(string)
+
+            #ELEMENT PARAMETERS - CHI
+            string = ''
+            string += 'reaxff_chi  \n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno+1][5]))
+            libfile.write(string)
+
+            #ELEMENT PARAMETERS - MU
+            string = ''
+            string += 'reaxff_mu   \n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno+1][6]))
+            libfile.write(string)
+
+            #ELEMENT PARAMETERS - MU
+            string = ''
+            string += 'reaxff_gamma  \n'
+            for lineno in list(range(4,len(self.onebody),4)):
+                string += '%-2s core %8.4f\n' % (self.onebody[lineno][0], float(self.onebody[lineno][6]))
+            libfile.write(string)
+
+            #BOND PARAMETERS
+            string = '#\n'
+            string += '#  Bond parameters \n'
+            string += '#\n'
+            libfile.write(string)
+
+            #BOND PARAMETERS - BO OVER BO13
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            first = True
+            for lineno in list(range(2,len(self.twobody),2)):
+                if (float(self.twobody[lineno][7]) > 0.001 and float(self.twobody[lineno+1][6]) > 0.001):
+                    if first:
+                        string += 'reaxff2_bo over bo13\n'
+                        first = False
+                    n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                    bo3 = 0.0 if (np.absolute(float(self.twobody[lineno+1][1])-1.0) < 1.0e-12) else float(self.twobody[lineno+1][1])
+                    string += '%-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(self.twobody[lineno+1][4]), float(self.twobody[lineno+1][5]), bo3, float(self.twobody[lineno+1][2]), float(self.twobody[lineno][6]), float(self.twobody[lineno][8]))
+            libfile.write(string)
+
+            #BOND PARAMETERS - BO UNDER
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            first = True
+            for lineno in list(range(2,len(self.twobody),2)):
+                if (float(self.twobody[lineno][7]) > 0.001 and float(self.twobody[lineno+1][6]) <= 0.001):
+                    if first:
+                        string += 'reaxff2_bo bo13\n'
+                        first = False
+                    n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                    bo3 = 0.0 if math.isclose(1.0, float(self.twobody[lineno+1][1])) else float(self.twobody[lineno+1][1])
+                    #bo3 = 0.0 if (np.absolute(float(self.twobody[lineno+1][1])-1.0) < 1.0e-12) else float(self.twobody[lineno+1][1])
+                    string += '%-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(self.twobody[lineno+1][4]), float(self.twobody[lineno+1][5]), bo3, float(self.twobody[lineno+1][2]), float(self.twobody[lineno][6]), float(self.twobody[lineno][8]))
+            libfile.write(string)
+
+            #BOND PARAMETERS - BO OVER
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            first = True
+            for lineno in list(range(2,len(self.twobody),2)):
+                if (float(self.twobody[lineno][7]) <= 0.001 and float(self.twobody[lineno+1][6]) > 0.001):
+                    if first:
+                        string += 'reaxff2_bo over\n'
+                        first = False
+                    n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                    bo3 = 0.0 if math.isclose(1.0, float(self.twobody[lineno+1][1])) else float(self.twobody[lineno+1][1])
+                    #bo3 = 0.0 if (np.absolute(float(self.twobody[lineno+1][1])-1.0) < 1.0e-12) else float(self.twobody[lineno+1][1])
+                    string += '%-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(self.twobody[lineno+1][4]), float(self.twobody[lineno+1][5]), bo3, float(self.twobody[lineno+1][2]), float(self.twobody[lineno][6]), float(self.twobody[lineno][8]))
+            libfile.write(string)
+
+            #BOND PARAMETERS - BO
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            first = True
+            for lineno in list(range(2,len(self.twobody),2)):
+                if (float(self.twobody[lineno][7]) <= 0.001 and float(self.twobody[lineno+1][6]) <= 0.001):
+                    if first:
+                        string += 'reaxff2_bo \n'
+                        first = False
+                    n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                    bo3 = 0.0 if math.isclose(1.0, float(self.twobody[lineno+1][1])) else float(self.twobody[lineno+1][1])
+                    string += '%-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(self.twobody[lineno+1][4]), float(self.twobody[lineno+1][5]), bo3, float(self.twobody[lineno+1][2]), float(self.twobody[lineno][6]), float(self.twobody[lineno][8]))
+            libfile.write(string)
+
+
+            #BOND PARAMETERS - BOND KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff2_bond kcal \n'
+            for lineno in list(range(2,len(self.twobody),2)):
+                n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                string += '%-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(self.twobody[lineno][2]), float(self.twobody[lineno][3]), float(self.twobody[lineno][4]), float(self.twobody[lineno][5]), float(self.twobody[lineno+1][0]))
+            libfile.write(string)
+
+            #BOND PARAMETERS - BOND OVER
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff2_over \n'
+            for lineno in list(range(2,len(self.twobody),2)):
+                n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                string += '%-2s core %-2s core %8.4f \n' % (element_number[n1], element_number[n2], float(self.twobody[lineno][9]))
+            libfile.write(string)
+
+            #BOND PARAMETERS - BOND PEN KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            first = True
+            for lineno in list(range(2,len(self.twobody),2)):
+                if float(self.twobody[lineno+1][7]) > 0.0:
+                    if first:
+                        string += 'reaxff2_pen kcal\n'
+                        first = False
+                    n1, n2 = int(self.twobody[lineno][0]), int(self.twobody[lineno][1])
+                    string += '%-2s core %-2s core %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(self.twobody[lineno+1][7]), float(self.general[14][0]), 1.0)
+            libfile.write(string)
+
+
+            #BOND PARAMETERS - BOND MORSE KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff2_morse kcal\n'
+            for line in self.offdiagonal[1:]:
+                n1, n2 = int(line[0]), int(line[1])
+                string += '%-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], float(line[2]), float(line[4]), float(line[3]), float(line[5]), float(line[6]), float(line[7]))
+            libfile.write(string)
+
+
+            #ANGLE PARAMETERS
+            string = '#\n'
+            string += '#  Angle parameters \n'
+            string += '#\n'
+            libfile.write(string)
+
+
+            #ANGLE PARAMETERS - ANGLE KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff3_angle kcal\n'
+            for line in self.threebody[1:]:
+                n2, n1, n3 = int(line[0]), int(line[1]), int(line[2])
+                if float(line[4]) > 0.0:
+                    string += '%-2s core %-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], float(line[3]), float(line[4]), float(line[5]), float(line[9]), float(line[7]))
+            libfile.write(string)
+
+            #ANGLE PARAMETERS - PENALTY KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff3_penalty kcal \n'
+            for line in self.threebody[1:]:
+                n2, n1, n3 = int(line[0]), int(line[1]), int(line[2])
+                string += '%-2s core %-2s core %-2s core %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], float(line[8]))
+            libfile.write(string)
+
+            #ANGLE PARAMETERS - CONJUGATION KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff3_conjugation kcal \n'
+            for line in self.threebody[1:]:
+                if np.absolute(float(line[6])) > 1.0e-4:
+                    n2, n1, n3 = int(line[0]), int(line[1]), int(line[2])
+                    string += '%-2s core %-2s core %-2s core %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], float(line[6]), float(self.general[3][0]), float(self.general[39][0]), float(self.general[31][0]))
+            libfile.write(string)
+
+
+
+            #HBOND PARAMETERS
+            string = '#\n'
+            string += '#  Hydrogen bond parameters \n'
+            string += '#\n'
+            libfile.write(string)
+
+            #HBOND PARAMETERS - CONJUGATION KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff3_hbond kcal \n'
+            for line in self.hbond[1:]:
+                n2, n1, n3 = int(line[0]), int(line[1]), int(line[2])
+                string += '%-2s core %-2s core %-2s core %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], float(line[3]), float(line[4]), float(line[5]), float(line[6]))
+            libfile.write(string)
+
+
+
+            #TORSION PARAMETERS
+            string = '#\n'
+            string += '#  Torsion parameters \n'
+            string += '#\n'
+            libfile.write(string)
+
+            #HBOND PARAMETERS - CONJUGATION KCAL
+            element_number = ['X']
+            for line in self.onebody[4::4]:
+                element_number.append(line[0])
+            string = ''
+            string += 'reaxff4_torsion kcal \n'
+            for line in self.fourbody[1:]:
+                n1, n2, n3, n4 = int(line[0]), int(line[1]), int(line[2]), int(line[3])
+                string += '%-2s core %-2s core %-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], element_number[n4], float(line[4]), float(line[5]), float(line[6]), float(line[7]), float(line[8]))
+            libfile.write(string)
