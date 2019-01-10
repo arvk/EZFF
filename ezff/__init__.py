@@ -2,13 +2,32 @@
 import numpy as np
 import xtal
 from platypus import Problem, Real, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
-from platypus.mpipool import MPIPool
+try:
+    from platypus.mpipool import MPIPool
+except ImportError:
+    pass
 import os
 import sys
 from .ffio import write_forcefield_file
 
 class Problem(Problem):
+    """
+    Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
+    """
     def __init__(self, num_errors = None, error_function = None, variables = None, variable_bounds = None, template = None):
+        """
+        :param num_errors: Number of errors to be minimized for forcefield optimization
+        :type num_errors: int
+
+        :param error_function: User-defined function that takes-in a dictionary of variable-value pairs and outputs a list of computed errors
+        :type error_function: function
+
+        :param variable_bounds: Dictionary of bounds for decision variables in the format `variable: [lower_bound upper_bound]`
+        :type variable_bounds: dict
+
+        :param template: Forcefield template
+        :type template: str
+        """
         super(Problem, self).__init__(len(variables),num_errors)
         for counter, value in enumerate(variables):
             if value[0] == '_':
@@ -22,17 +41,46 @@ class Problem(Problem):
         self.template = template
 
     def evaluate(self, solution):
+        """
+        Wrapper for platypus.Problem.evaluate . Takes the array of current decision variables and repackages it as a dictionary for the error function
+
+        :param solution: 1-D array of variables for current epoch and rank
+        :type solution: list
+        """
         current_var_dict = dict(zip(self.variables, solution.variables))
         solution.objectives[:] = self.error_function(current_var_dict)
 
 
 class Pool(MPIPool):
+    """
+    Wrapper for platypus.MPIPool
+
+    :param MPIPool: MPI Pool
+    :type MPIPool: MPIPool
+    """
     def __init__(self):
         super(Pool,self).__init__()
 
 
 def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
-    """Calculate error between MD-computed dispersion and the ground-truth"""
+    """
+    Calculate error between MD-computed phonon dispersion and the ground-truth phonon dispersion with user-defined weighting schemes
+
+    :param md_disp: MD-computed phonon dispersion curve
+    :type md_disp: 2D np.array
+
+    :param gt_disp: Ground-truth phonon dispersion curve
+    :type gt_disp: 2D np.array
+
+    :param weights: User-defined weighting scheme for calculating errors provided as a list of numbers, one per band. Possible values are
+                    ``uniform`` - where errors from all bands are equally weighted,
+                    ``acoustic`` - where errors from lower-frequency bands are assigned greater weights, and
+                    `list` - 1-D list of length equal to number of bands
+    :type weights: str `or` list
+
+    :param verbose: Deprecated option for verbosity of error calculation routine
+    :type verbose: bool
+    """
     # Perform sanity check. Number of bands should be equal between the two structures
     if not len(md_disp) == len(gt_disp):
         raise ValueError("MD and ground truth dispersions have different number of bands")
@@ -60,6 +108,12 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
 
 
 def read_atomic_structure(structure_file):
+    """
+    Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
+
+    :param structure_file: Filename of the atomic structure file
+    :type structure_file: str
+    """
     structure = xtal.AtTraj(verbose=False)
 
     if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
@@ -69,6 +123,22 @@ def read_atomic_structure(structure_file):
 
 
 def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
+    """
+    Uniform wrapper function that steps through the optimization process. Also provides uniform handling of output files.
+
+    :param problem: EZFF Problem to be optimized
+    :type problem: Problem
+
+    :param algorithm: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
+    :type algorithm: str
+
+    :param iterations: Number of epochs to perform the optimization for
+    :type iterations: int
+
+    :param write_forcefields: All non-dominated forcefields are written out every ``write_forcefields`` epochs. If this is ``None``, the forcefields are written out for the first and last epoch
+    :type writE_forcefields: int or None
+
+    """
     if not isinstance(write_forcefields, int):
         write_forcefields = iterations
     for i in range(0,iterations):
@@ -103,6 +173,22 @@ def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
 
 
 def pick_algorithm(myproblem, algorithm, population = 1024, evaluator = None):
+    """
+    Return a serial or parallel platypus.Algorithm object based on input string
+
+    :param myproblem: EZFF Problem to be optimized
+    :type myproblem: Problem
+
+    :param algorithm: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
+    :type algorithm: str
+
+    :param population: Population size for genetic algorithms
+    :type population: int
+
+    :param evaluator: Platypus.Evaluator in case of parallel execution
+    :type evaluator: Platypus.Evaluator
+    """
+
     if algorithm.lower().upper() == 'NSGAII':
         if evaluator is None:
             return NSGAII(myproblem, population_size = population)
@@ -125,6 +211,21 @@ def pick_algorithm(myproblem, algorithm, population = 1024, evaluator = None):
 
 
 def Algorithm(myproblem, algorithm, population = 1024, pool = None):
+    """
+    Provide a uniform interface to initialize an algorithm class for serial and parallel execution
+
+    :param myproblem: EZFF Problem to be optimized
+    :type myproblem: Problem
+
+    :param algorithm: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
+    :type algorithm: str
+
+    :param population: Population size for genetic algorithms
+    :type population: int
+
+    :param pool: MPI pool for parallel execution. If this is None, serial execution is assumed
+    :type pool: MPIPool or None
+    """
     if pool is None:
         algorithm = pick_algorithm(myproblem, algorithm, population = population)
     else:
@@ -135,4 +236,3 @@ def Algorithm(myproblem, algorithm, population = 1024, pool = None):
             evaluator = PoolEvaluator(pool)
             algorithm = pick_algorithm(myproblem, algorithm, population = population, evaluator = evaluator)
     return algorithm
-

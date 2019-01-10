@@ -4,6 +4,13 @@ import xtal
 from ezff.utils import convert_units as convert
 
 def read_ground_state(outfilename):
+    """
+    Read-in a single converged structure from a QChem optimization run
+
+    :param outfilename: Filename for ``stdout`` from the QChem job
+    :type outfilename: str
+    :returns: ``xtal`` tranjectory with a single snapshot with the converged structure and ground-state energy
+    """
     structure = xtal.AtTraj()
     snapshot = structure.create_snapshot(xtal.Snapshot)
     outfile = open(outfilename,'r')
@@ -45,6 +52,13 @@ def read_ground_state(outfilename):
 
 
 def read_scan(outfilename):
+    """
+    Read-in a multiple partially-converged structures from a PES scan (including bond-scans, angle-scans and dihedral-scans)
+
+    :param outfilename: Filename for ``stdout`` from the QChem PES scan job
+    :type outfilename: str
+    :returns: ``xtal`` trajectory object with structures and converged energies along the PES scan as individual snapshots
+    """
     structure = xtal.AtTraj()
 
     # Read energies

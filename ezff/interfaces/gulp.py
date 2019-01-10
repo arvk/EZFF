@@ -5,9 +5,18 @@ import numpy as np
 from ezff.utils import convert_units as convert
 
 class job:
-    """A single GULP job"""
+    """
+    Class representing a GULP calculation
+    """
 
     def __init__(self, verbose=False, path='.'):
+        """
+        :param path: Path where the GULP job must be run from
+        :type path: str
+
+        :param verbose: Print details about the GULP job
+        :type verbose: bool
+        """
         if not os.path.isdir(path):
             if verbose:
                 print('Path for current job is not valid . Creating a new directory...')
@@ -32,7 +41,21 @@ class job:
             print('Created a new GULP job')
 
     def run(self, command = None, parallel = False, processors = 1, timeout = None):
-        """Execute the GULP job"""
+        """
+        Execute GULP job with user-defined parameters
+
+        :param command: path to GULP executable
+        :type command: str
+
+        :param parallel: Flag for parallel execution
+        :type parallel: bool
+
+        :param processors: Number of processors for parallel execution of each GULP job
+        :type processors: int
+
+        :param timeout: GULP job is automatically killed after ``timeout`` seconds
+        :type timeout: int
+        """
         if command is None:
             command = self.command
 
@@ -50,6 +73,13 @@ class job:
 
 
     def read_atomic_structure(self,structure_file):
+        """
+        Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
+
+        :param structure_file: Filename of the atomic structure file
+        :type structure_file: str
+        :returns: xtal trajectory with the structure in the first snapshot
+        """
         structure = xtal.AtTraj(verbose=False)
 
         if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
@@ -59,6 +89,12 @@ class job:
 
 
     def write_script_file(self, convert_reaxff=None):
+        """
+        Write-out a complete GULP script file, ``job.scriptfile``, based on job parameters
+
+        :param convert_reaxff: Optional function that manipulates ``job.forcefield`` before the script file is written
+        :type convert_reaxff: bool
+        """
         opts = self.options
         script = open(self.path+'/'+self.scriptfile,'w')
         header_line = ''
@@ -123,6 +159,9 @@ class job:
 
 
     def cleanup(self):
+        """
+        Clean-up after the completion of a GULP job. Deletes input, output and forcefields files
+        """
         files_to_be_removed = [self.outfile+'.disp', self.outfile+'.dens', self.outfile, self.scriptfile, self.outfile+'.runerror']
         for file in files_to_be_removed:
             if os.path.isfile(file):
@@ -136,6 +175,13 @@ class job:
 
 
 def read_elastic_moduli(outfilename):
+    """
+    Read elastic modulus matrix from a completed GULP job
+
+    :param outfilename: Path of the stdout from the GULP job
+    :type outfilename: str
+    :returns: 6x6 Elastic modulus matrix in GPa
+    """
     moduli = np.zeros((6,6))
     outfile = open(outfilename,'r')
     for oneline in outfile:
@@ -162,6 +208,13 @@ def read_elastic_moduli(outfilename):
 
 
 def read_lattice_constant(outfilename):
+    """
+    Read lattice constant values from a completed GULP job
+
+    :param outfilename: Path of the stdout from the GULP job
+    :type outfilename: str
+    :returns: Dictionary with ``abc`` - 3 lattice constants, ``ang`` - 3 supercell angles, ``err_abc`` - error in lattice constant, ``err_ang`` - error in supercell angles
+    """
     abc, ang = np.zeros(3), np.zeros(3)
     err_abc, err_ang = np.zeros(3), np.zeros(3)
     outfile = open(outfilename, 'r')
@@ -193,6 +246,13 @@ def read_lattice_constant(outfilename):
     return lattice
 
 def read_energy(outfilename):
+    """
+    Read single-point from a completed GULP job
+
+    :param outfilename: Path of the stdout from the GULP job
+    :type outfilename: str
+    :returns: Energy of the structure in eV
+    """
     outfile = open(outfilename, 'r')
     for line in outfile:
         if 'Total lattice energy' in line:
@@ -202,6 +262,13 @@ def read_energy(outfilename):
     outfile.close()
 
 def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
+    """
+    Read phonon dispersion from a complete GULP job
+
+    :param phonon_dispersion_file: Path of file containing phonon dispersion from the GULP job
+    :type phonon_dispersion_file: str
+    :returns: 2D np.array containing the phonon dispersion in THz
+    """
     pbs = []
     freq_conversion = {'cm-1': 0.0299792453684314, 'THz': 1, 'eV': 241.79893, 'meV': 0.24180}
     dispersion = open(phonon_dispersion_file, 'r')

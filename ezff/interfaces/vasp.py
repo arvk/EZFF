@@ -2,6 +2,13 @@
 import numpy as np
 
 def read_phonon_dispersion(phonon_dispersion_file):
+    """
+    Read-in ground-truth phonon dispersion curve from VASP+Phonopy
+
+    :param phonon_dispersion_file: Filename for the VASP + Phonopy phonon dispersion
+    :type phonon_dispersion_file: str
+    :returns: 2D np.array of phonon dispersion values
+    """
     f = open(phonon_dispersion_file,'r')
     commentline = f.readline()
     commentline = f.readline()

@@ -2,8 +2,20 @@ import numpy as np
 import itertools
 
 class reax_forcefield:
-
+    """
+    ReaxFF forcefield class. Used for generating ReaxFF templates
+    """
     def __init__(self,filename = None, template = 'ff.template.generated', ranges = 'param_ranges'):
+        """
+        :param filename: ReaxFF forcefield filename
+        :type filename: str
+
+        :param template: ReaxFF forcefield template filename
+        :type template: str
+
+        :param ranges: File containing the lower and upper bounds for decision variables
+        :type ranges: str
+        """
         print('Opened new ReaxFF')
         self.params_write = []
         self.template = template
@@ -12,6 +24,12 @@ class reax_forcefield:
             self.read_forcefield(filename)
 
     def read_forcefield(self,filename):
+        """
+        Read ReaxFF forcefield
+
+        :param filename: ReaxFF forcefield filename
+        :type filename: str
+        """
         fffile = open(filename,'r')
         ff = fffile.readlines()
         fffile.close()
@@ -19,6 +37,9 @@ class reax_forcefield:
         return
 
     def split_forcefield(self):
+        """
+        Split ReaxFF forcefield into sections corresponding to general, one-body, two-body, three-body, four-body, offdiagonal and H-bond sections
+        """
         header, general, onebody, twobody, offdiagonal, threebody, fourbody, hbond = [], [], [], [], [], [], [], []
         counter = 0
         ff = self.full
@@ -81,6 +102,12 @@ class reax_forcefield:
         return #header, general, onebody, twobody, offdiagonal, threebody, fourbody, hbond
 
     def get_element_number(self,element):
+        """
+        Get the numerical index of an element in the ReaxFF forcefield file
+
+        :param element: Chemical symbol for the element
+        :type element: str
+        """
         new_onebody = self.onebody[4::4]
         for i in range(len(new_onebody)):
             if new_onebody[i][0].lower().upper() == element.lower().upper():
@@ -90,6 +117,25 @@ class reax_forcefield:
 
 
     def template_bond_order(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
+        """
+        Generate decision variables in the bond-order equation for bonds between two elements
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+
+        :param double_bond: Flag for the presence of a double-bond between elements e1 and e2
+        :type double_bond: bool
+
+        :param triple_bond: Flag for the presence of a triple-bond between elements e1 and e2
+        :type triple_bond: bool
+
+        """
         ie1, ie2 = self.get_element_number(e1), self.get_element_number(e2)
 
         #-------------------#
@@ -193,6 +239,24 @@ class reax_forcefield:
 
 
     def template_bond_energy_attractive(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
+        """
+        Generate decision variables related to the two-body attractive term
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+
+        :param double_bond: Flag for the presence of a double-bond between elements e1 and e2
+        :type double_bond: bool
+
+        :param triple_bond: Flag for the presence of a triple-bond between elements e1 and e2
+        :type triple_bond: bool
+        """
         ie1, ie2 = self.get_element_number(e1), self.get_element_number(e2)
 
         #-------------------#
@@ -263,6 +327,21 @@ class reax_forcefield:
 
 
     def template_bond_energy_vdW(self, e1, e2, f13 = False, bounds = 0.1):
+        """
+        Generate decision variables related to the two-body repulsive (i.e. van der Waals) term
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+
+        :param f13: Flag for the optimization of common variables
+        :type f13: bool
+        """
         ie1, ie2 = self.get_element_number(e1), self.get_element_number(e2)
 
         # Dij, rvdWm alpha_ij in off-diagonal
@@ -326,6 +405,21 @@ class reax_forcefield:
 
 
     def template_threebody_energy(self, e1, e2, e3, bounds = 0.1):
+        """
+        Generate decision variables related to the three-body angle term
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param e3: Chemical symbol for element 3
+        :type e3: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+        """
         # theta0, Pval1, Pval2 in threebody
         for triplet in list(set(list(itertools.permutations([e1,e2,e3])))):
             ie1 = self.get_element_number(triplet[0])
@@ -351,6 +445,24 @@ class reax_forcefield:
 
 
     def template_fourbody_energy(self, e1, e2, e3, e4, bounds = 0.1):
+        """
+        Generate decision variables related to the four-body dihedral term
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param e3: Chemical symbol for element 3
+        :type e3: str
+
+        :param e4: Chemical symbol for element 4
+        :type e4: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+        """
         # V1, V2, V3, Ptor1 in fourbody
         for quartet in list(set(list(itertools.permutations([e1,e2,e3,e4])))):
             ie1 = self.get_element_number(quartet[0])
@@ -381,6 +493,9 @@ class reax_forcefield:
 
 
     def generate_templates(self):
+        """
+        Function to write-out the current modified forcefield sections into a forcefield template file
+        """
         with open(self.ranges, 'w') as ranges_file:
             for parameter in self.params_write:
                 ranges_file.write(' '.join(parameter) + '\n')
@@ -406,6 +521,27 @@ class reax_forcefield:
 
 
     def make_template_twobody(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1, common = False):
+        """
+        Function to generate decision variables for all two-body terms (i.e. bond-order, attractive and vdW) between two given elements
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+
+        :param double_bond: Flag for the presence of a double-bond between elements e1 and e2
+        :type double_bond: bool
+
+        :param triple_bond: Flag for the presence of a triple-bond between elements e1 and e2
+        :type triple_bond: bool
+
+        :param common: Flag for the optimization of common parameters
+        :type common: bool
+        """
         # GET BOND_ORDER_PARAMETERS
         self.template_bond_order(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
         self.template_bond_energy_attractive(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
@@ -413,9 +549,48 @@ class reax_forcefield:
         return
 
     def make_template_threebody(self, e1, e2, e3, bounds = 0.1, common = False):
+        """
+        Function to generate decision variables for all three-body terms for a given triplet of elements
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param e3: Chemical symbol for element 3
+        :type e3: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+
+        :param common: Flag for the optimization of common parameters
+        :type common: bool
+        """
         self.template_threebody_energy(e1, e2, e3, bounds = bounds)
         return
 
     def make_template_fourbody(self, e1, e2, e3, e4, bounds = 0.1, common = False):
+        """
+        Function to generate decision variables for all four-body terms for a given quartet of elements
+
+        :param e1: Chemical symbol for element 1
+        :type e1: str
+
+        :param e2: Chemical symbol for element 2
+        :type e2: str
+
+        :param e3: Chemical symbol for element 3
+        :type e3: str
+
+        :param e4: Chemical symbol for element 4
+        :type e4: str
+
+        :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        :type bounds: float
+
+        :param common: Flag for the optimization of common parameters
+        :type common: bool
+        """
         self.template_fourbody_energy(e1, e2, e3, e4, bounds = bounds)
         return
