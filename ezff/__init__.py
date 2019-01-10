@@ -1,20 +1,20 @@
 """This module provide general functions for EZFF"""
-import numpy as np
+import os
+import sys
 import xtal
+import numpy as np
 from platypus import Problem, Real, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
 try:
     from platypus.mpipool import MPIPool
 except ImportError:
     pass
-import os
-import sys
 from .ffio import write_forcefield_file
 
 class Problem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
     """
-    def __init__(self, num_errors = None, error_function = None, variables = None, variable_bounds = None, template = None):
+    def __init__(self, num_errors=None, error_function=None, variables=None, variable_bounds=None, template=None):
         """
         :param num_errors: Number of errors to be minimized for forcefield optimization
         :type num_errors: int
@@ -28,7 +28,7 @@ class Problem(Problem):
         :param template: Forcefield template
         :type template: str
         """
-        super(Problem, self).__init__(len(variables),num_errors)
+        super(Problem, self).__init__(len(variables), num_errors)
         for counter, value in enumerate(variables):
             if value[0] == '_':
                 self.types[counter] = Integer(variable_bounds[value][0], variable_bounds[value][1])
@@ -59,7 +59,7 @@ class Pool(MPIPool):
     :type MPIPool: MPIPool
     """
     def __init__(self):
-        super(Pool,self).__init__()
+        super(Pool, self).__init__()
 
 
 def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
@@ -93,14 +93,14 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
         pass
     elif weights == 'acoustic':
         maxfreq = np.amax(gt_disp)
-        W = np.reciprocal((np.mean(gt_disp,axis=1)/maxfreq) + 0.1)
+        W = np.reciprocal((np.mean(gt_disp, axis=1)/maxfreq) + 0.1)
 
     # Compute the RMS error between dispersions
     rms_error = 0.0
     num_k_gt = len(gt_disp[0])
     scaling = num_k_gt/100.0
-    for band_index in range(0,len(gt_disp)):
-        interp_md_band = np.interp(np.arange(0,num_k_gt),np.arange(0,100)*scaling,md_disp[band_index])
+    for band_index in range(0, len(gt_disp)):
+        interp_md_band = np.interp(np.arange(0, num_k_gt), np.arange(0, 100)*scaling, md_disp[band_index])
         rms_error += np.linalg.norm(interp_md_band - gt_disp[band_index]) * W[band_index]
 
     rms_error /= (num_k_gt * num_band)
@@ -122,7 +122,7 @@ def read_atomic_structure(structure_file):
     return structure
 
 
-def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
+def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     """
     Uniform wrapper function that steps through the optimization process. Also provides uniform handling of output files.
 
@@ -141,7 +141,7 @@ def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
     """
     if not isinstance(write_forcefields, int):
         write_forcefields = iterations
-    for i in range(0,iterations):
+    for i in range(0, iterations):
         print('Epoch: '+ str(i))
         algorithm.step()
 
@@ -152,8 +152,8 @@ def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
 
         varfilename = outdir + '/variables'
         objfilename = outdir + '/errors'
-        varfile = open(varfilename,'w')
-        objfile = open(objfilename,'w')
+        varfile = open(varfilename, 'w')
+        objfile = open(objfilename, 'w')
         for solution in unique(nondominated(algorithm.result)):
             varfile.write(' '.join([str(variables) for variables in solution.variables]))
             varfile.write('\n')
@@ -168,11 +168,11 @@ def optimize(problem, algorithm, iterations = 100, write_forcefields = None):
             for sol_index, solution in enumerate(unique(nondominated(algorithm.result))):
                 ff_name = outdir + '/forcefields/FF_' + str(sol_index)
                 parameters_dict = dict(zip(problem.variables, solution.variables))
-                write_forcefield_file(ff_name,problem.template,parameters_dict,verbose=False)
+                write_forcefield_file(ff_name, problem.template, parameters_dict, verbose=False)
 
 
 
-def pick_algorithm(myproblem, algorithm, population = 1024, evaluator = None):
+def pick_algorithm(myproblem, algorithm, population=1024, evaluator=None):
     """
     Return a serial or parallel platypus.Algorithm object based on input string
 
@@ -191,26 +191,26 @@ def pick_algorithm(myproblem, algorithm, population = 1024, evaluator = None):
 
     if algorithm.lower().upper() == 'NSGAII':
         if evaluator is None:
-            return NSGAII(myproblem, population_size = population)
+            return NSGAII(myproblem, population_size=population)
         else:
-            return NSGAII(myproblem, population_size = population, evaluator = evaluator)
+            return NSGAII(myproblem, population_size=population, evaluator=evaluator)
     elif algorithm.lower().upper() == 'NSGAIII':
-        divisions = int(np.power(population * np.math.factorial(num_errors-1),1.0/(num_errors-1))) + 2 - num_errors
-        divisions = np.maximum(1,divisions)
+        divisions = int(np.power(population * np.math.factorial(num_errors-1), 1.0/(num_errors-1))) + 2 - num_errors
+        divisions = np.maximum(1, divisions)
         if evaluator is None:
-            return NSGAIII(myproblem, divisions_outer = divisions)
+            return NSGAIII(myproblem, divisions_outer=divisions)
         else:
-            return NSGAIII(myproblem, divisions_outer = divisions, evaluator = evaluator)
+            return NSGAIII(myproblem, divisions_outer=divisions, evaluator=evaluator)
     elif algorithm.lower().upper() == 'IBEA':
         if evaluator is None:
-            return IBEA(myproblem, population_size = population)
+            return IBEA(myproblem, population_size=population)
         else:
-            return IBEA(myproblem, population_size = population, evaluator = evaluator)
+            return IBEA(myproblem, population_size=population, evaluator=evaluator)
     else:
         raise Exception('Please enter an algorithm for optimization. NSGAII , NSGAIII , IBEA are supported')
 
 
-def Algorithm(myproblem, algorithm, population = 1024, pool = None):
+def Algorithm(myproblem, algorithm, population=1024, pool=None):
     """
     Provide a uniform interface to initialize an algorithm class for serial and parallel execution
 
@@ -227,12 +227,12 @@ def Algorithm(myproblem, algorithm, population = 1024, pool = None):
     :type pool: MPIPool or None
     """
     if pool is None:
-        algorithm = pick_algorithm(myproblem, algorithm, population = population)
+        algorithm = pick_algorithm(myproblem, algorithm, population=population)
     else:
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
         else:
             evaluator = PoolEvaluator(pool)
-            algorithm = pick_algorithm(myproblem, algorithm, population = population, evaluator = evaluator)
+            algorithm = pick_algorithm(myproblem, algorithm, population=population, evaluator=evaluator)
     return algorithm
