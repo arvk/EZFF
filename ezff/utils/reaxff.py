@@ -17,7 +17,6 @@ class reax_forcefield:
         :param ranges: File containing the lower and upper bounds for decision variables
         :type ranges: str
         """
-        print('Opened new ReaxFF')
         self.params_write = []
         self.template = template
         self.ranges = ranges
@@ -35,6 +34,9 @@ class reax_forcefield:
         ff = fffile.readlines()
         fffile.close()
         self.full = ff
+
+        # Split forcefield
+        self.split_forcefield()
         return
 
     def split_forcefield(self):
@@ -100,7 +102,6 @@ class reax_forcefield:
         self.fourbody = fourbody
         self.hbond = hbond
 
-        return #header, general, onebody, twobody, offdiagonal, threebody, fourbody, hbond
 
     def get_element_number(self,element):
         """
