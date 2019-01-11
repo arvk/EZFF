@@ -143,7 +143,7 @@ class job:
                 script.write(' '.join(line.split()) + '\n')
         else:
             self.forcefield = convert_reaxff(self.forcefield)
-            script.write('library ' + self.forcefield)
+            script.write('library ' + os.path.basename(self.forcefield))
         script.write('\n')
 
         if opts['phonon_dispersion_from'] is not None:
