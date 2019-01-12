@@ -1,4 +1,6 @@
 """This module provide methods to handle reading and writing forcefields"""
+import numpy as np
+import time
 
 def read_parameter_bounds(filename, verbose=False):
     """Read permissible lower and upper bounds for decision variables used in forcefields optimization
@@ -10,14 +12,18 @@ def read_parameter_bounds(filename, verbose=False):
     :type verbose: bool
     """
     parameter_bounds = {}
-    with open(filename, 'r') as parameter_bounds_file:
-        for line in parameter_bounds_file:
-            items = line.strip().split()
-            key, values = items[0], items[1:]
-            if key[0] == '_':
-                parameter_bounds[key] = list(map(int, values))
-            else:
-                parameter_bounds[key] = list(map(float, values))
+    while True: # Force-read the parameter bounds file. This will loop until something is read-in. This is required if multiple ranks access the same file at the same time
+        time.sleep(np.random.rand())
+        with open(filename, 'r') as parameter_bounds_file:
+            for line in parameter_bounds_file:
+                items = line.strip().split()
+                key, values = items[0], items[1:]
+                if key[0] == '_':
+                    parameter_bounds[key] = list(map(int, values))
+                else:
+                    parameter_bounds[key] = list(map(float, values))
+        if not parameter_bounds == {}:
+            break
 
     if verbose:
         allkeys = ''
@@ -35,8 +41,13 @@ def read_parameter_template(template_filename):
     :param template_filename: Name of the forcefield template file to be read-in
     :type template_filename: str
     """
-    with open(template_filename) as parameter_template_file:
-        template_string = parameter_template_file.read()
+    while True: # Force-read the template forcefield. This will loop until something is read-in. This is required if multiple ranks read the same file at the same time
+        time.sleep(np.random.rand())
+        with open(template_filename) as parameter_template_file:
+            template_string = parameter_template_file.read()
+        if len(template_string) > 0:
+            break
+
     return template_string
 
 
