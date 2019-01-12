@@ -1,7 +1,7 @@
 EZFF - Easy forcefield fitting
 ==============================
 
-.. autoclass:: ezff.Problem
+.. autoclass:: ezff.OptProblem
    :members:
 
    .. automethod:: __init__

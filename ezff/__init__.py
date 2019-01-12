@@ -3,14 +3,15 @@ import os
 import sys
 import xtal
 import numpy as np
-from platypus import Problem, Real, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
+from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
+from platypus.types import Real, Integer
 try:
     from platypus.mpipool import MPIPool
 except ImportError:
     pass
 from .ffio import write_forcefield_file
 
-class Problem(Problem):
+class OptProblem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
     """
@@ -28,7 +29,7 @@ class Problem(Problem):
         :param template: Forcefield template
         :type template: str
         """
-        super(Problem, self).__init__(len(variables), num_errors)
+        super(OptProblem, self).__init__(len(variables), num_errors)
         for counter, value in enumerate(variables):
             if value[0] == '_':
                 self.types[counter] = Integer(variable_bounds[value][0], variable_bounds[value][1])
