@@ -59,8 +59,8 @@ class Pool(MPIPool):
     :param MPIPool: MPI Pool
     :type MPIPool: MPIPool
     """
-    def __init__(self):
-        super(Pool, self).__init__()
+    def __init__(self, comm=None, debug=False, loadbalance=False):
+        super(Pool, self).__init__(comm=comm, debug=debug, loadbalance=loadbalance)
 
 
 def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
