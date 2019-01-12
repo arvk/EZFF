@@ -47,6 +47,8 @@ def read_ground_state(outfilename):
                 atom.charge = outfile.readline().strip().split()[2]
             break
 
+    outfile.close()
+
     return structure
 
 
