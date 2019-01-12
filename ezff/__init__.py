@@ -211,15 +211,15 @@ def pick_algorithm(myproblem, algorithm, population=1024, evaluator=None):
         raise Exception('Please enter an algorithm for optimization. NSGAII , NSGAIII , IBEA are supported')
 
 
-def Algorithm(myproblem, algorithm, population=1024, pool=None):
+def Algorithm(myproblem, algorithm_string, population=1024, pool=None):
     """
     Provide a uniform interface to initialize an algorithm class for serial and parallel execution
 
     :param myproblem: EZFF Problem to be optimized
     :type myproblem: Problem
 
-    :param algorithm: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
-    :type algorithm: str
+    :param algorithm_string: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
+    :type algorithm_string: str
 
     :param population: Population size for genetic algorithms
     :type population: int
@@ -228,12 +228,12 @@ def Algorithm(myproblem, algorithm, population=1024, pool=None):
     :type pool: MPIPool or None
     """
     if pool is None:
-        algorithm = pick_algorithm(myproblem, algorithm, population=population)
+        algorithm = pick_algorithm(myproblem, algorithm_string, population=population)
     else:
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
         else:
             evaluator = PoolEvaluator(pool)
-            algorithm = pick_algorithm(myproblem, algorithm, population=population, evaluator=evaluator)
+            algorithm = pick_algorithm(myproblem, algorithm_string, population=population, evaluator=evaluator)
     return algorithm
