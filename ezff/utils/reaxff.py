@@ -152,13 +152,15 @@ class reax_forcefield:
 
         #PBO1
         PBO1 = float(self.twobody[line_number][13-8-1]) # 13th term, -8 for previous line, -1 for 0 indexing
+        delta = bounds * np.absolute(PBO1)
         self.twobody[line_number][13-8-1] = '<<PBO1_'+e1+'_'+e2+'>>'
-        self.params_write.append(['PBO1_'+e1+'_'+e2, str(PBO1*(1-bounds)), str(PBO1*(1+bounds))])
+        self.params_write.append(['PBO1_'+e1+'_'+e2, str(PBO1-delta), str(PBO1+delta)])
 
         #PBO2
         PBO2 = float(self.twobody[line_number][14-8-1]) # 14th term, -8 for previous line, -1 for 0 indexing
+        delta = bounds * np.absolute(PBO2)
         self.twobody[line_number][14-8-1] = '<<PBO2_'+e1+'_'+e2+'>>'
-        self.params_write.append(['PBO2_'+e1+'_'+e2, str(PBO2*(1-bounds)), str(PBO2*(1+bounds))])
+        self.params_write.append(['PBO2_'+e1+'_'+e2, str(PBO2-delta), str(PBO2+delta)])
 
         # ro_sigma
         for index, line in enumerate(self.offdiagonal[1:]):
@@ -168,8 +170,9 @@ class reax_forcefield:
 
         # ro_sigma
         ro_sigma = float(self.offdiagonal[line_number][4+2-1])  # 4th term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(ro_sigma)
         self.offdiagonal[line_number][4+2-1] = '<<ro_sigma_'+e1+'_'+e2+'>>'
-        self.params_write.append(['ro_sigma_'+e1+'_'+e2, str(ro_sigma*(1-bounds)), str(ro_sigma*(1+bounds))])
+        self.params_write.append(['ro_sigma_'+e1+'_'+e2, str(ro_sigma-delta), str(ro_sigma+delta)])
 
 
 
@@ -185,13 +188,15 @@ class reax_forcefield:
 
             #PBO3
             PBO3 = float(self.twobody[line_number][10-8-1]) # 10th term, -8 for previous line, -1 for 0 indexing
+            delta = bounds * np.absolute(PBO3)
             self.twobody[line_number][10-8-1] = '<<PBO3_'+e1+'_'+e2+'>>'
-            self.params_write.append(['PBO3_'+e1+'_'+e2, str(PBO3*(1-bounds)), str(PBO3*(1+bounds))])
+            self.params_write.append(['PBO3_'+e1+'_'+e2, str(PBO3-delta), str(PBO3+delta)])
 
             #PBO4
             PBO4 = float(self.twobody[line_number][11-8-1]) # 11th term, -8 for previous line, -1 for 0 indexing
+            delta = bounds * np.absolute(PBO4)
             self.twobody[line_number][11-8-1] = '<<PBO4_'+e1+'_'+e2+'>>'
-            self.params_write.append(['PBO4_'+e1+'_'+e2, str(PBO4*(1-bounds)), str(PBO4*(1+bounds))])
+            self.params_write.append(['PBO4_'+e1+'_'+e2, str(PBO4-delta), str(PBO4+delta)])
 
             # ro_pi
             for index, line in enumerate(self.offdiagonal[1:]):
@@ -201,8 +206,9 @@ class reax_forcefield:
 
             # ro_pi
             ro_pi = float(self.offdiagonal[line_number][5+2-1])  # 4th term, +2 for atom indices, -1 for 0 indexing
+            delta = bounds * np.absolute(ro_pi)
             self.offdiagonal[line_number][5+2-1] = '<<ro_pi_'+e1+'_'+e2+'>>'
-            self.params_write.append(['ro_pi_'+e1+'_'+e2, str(ro_pi*(1-bounds)), str(ro_pi*(1+bounds))])
+            self.params_write.append(['ro_pi_'+e1+'_'+e2, str(ro_pi-delta), str(ro_pi+delta)])
 
 
         #-------------------#
@@ -217,13 +223,15 @@ class reax_forcefield:
 
             #PBO5
             PBO5 = float(self.twobody[line_number][5+2-1]) # 5th term, +2 for atom indices, -1 for 0 indexing
+            delta = bounds * np.absolute(PBO5)
             self.twobody[line_number][5+2-1] = '<<PBO5_'+e1+'_'+e2+'>>'
-            self.params_write.append(['PBO5_'+e1+'_'+e2, str(PBO5*(1-bounds)), str(PBO5*(1+bounds))])
+            self.params_write.append(['PBO5_'+e1+'_'+e2, str(PBO5-delta), str(PBO5+delta)])
 
             #PBO6
             PBO6 = float(self.twobody[line_number][8+2-1]) # 8th term, +2 for atom indices, -1 for 0 indexing
+            delta = bounds * np.absolute(PBO6)
             self.twobody[line_number][8+2-1] = '<<PBO6_'+e1+'_'+e2+'>>'
-            self.params_write.append(['PBO6_'+e1+'_'+e2, str(PBO6*(1-bounds)), str(PBO6*(1+bounds))])
+            self.params_write.append(['PBO6_'+e1+'_'+e2, str(PBO6-delta), str(PBO6+delta)])
 
             # ro_pipi
             for index, line in enumerate(self.offdiagonal[1:]):
@@ -233,8 +241,9 @@ class reax_forcefield:
 
             # ro_pipi
             ro_pipi = float(self.offdiagonal[line_number][6+2-1]) # 6th term, +2 for atom indices, -1 for 0 indexing
+            delta = bounds * np.absolute(ro_pipi)
             self.offdiagonal[line_number][6+2-1] = '<<ro_pipi_'+e1+'_'+e2+'>>'
-            self.params_write.append(['ro_pipi_'+e1+'_'+e2, str(ro_pipi*(1-bounds)), str(ro_pipi*(1+bounds))])
+            self.params_write.append(['ro_pipi_'+e1+'_'+e2, str(ro_pipi-delta), str(ro_pipi+delta)])
 
         return
 
@@ -273,20 +282,23 @@ class reax_forcefield:
 
         #De_sigma
         De_sigma = float(self.twobody[line_number][1+2-1]) # 1st term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(De_sigma)
         self.twobody[line_number][1+2-1] = '<<De_sigma_'+e1+'_'+e2+'>>'
-        self.params_write.append(['De_sigma_'+e1+'_'+e2, str(De_sigma*(1-bounds)), str(De_sigma*(1+bounds))])
+        self.params_write.append(['De_sigma_'+e1+'_'+e2, str(De_sigma-delta), str(De_sigma+delta)])
 
         #PBE1
         PBE1 = float(self.twobody[line_number][4+2-1]) # 4th term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(PBE1)
         self.twobody[line_number][4+2-1] = '<<PBE1_'+e1+'_'+e2+'>>'
-        self.params_write.append(['PBE1_'+e1+'_'+e2, str(PBE1*(1-bounds)), str(PBE1*(1+bounds))])
+        self.params_write.append(['PBE1_'+e1+'_'+e2, str(PBE1-delta), str(PBE1+delta)])
 
         line_number = (2 + (2*index) + 1)  # PBE2 is on the next line
 
         #PBE2
         PBE2 = float(self.twobody[line_number][9-8-1]) # 9th term, -8 for previous line, -1 for 0 indexing
+        delta = bounds * np.absolute(PBE2)
         self.twobody[line_number][9-8-1] = '<<PBE2_'+e1+'_'+e2+'>>'
-        self.params_write.append(['PBE2_'+e1+'_'+e2, str(PBE2*(1-bounds)), str(PBE2*(1+bounds))])
+        self.params_write.append(['PBE2_'+e1+'_'+e2, str(PBE2-delta), str(PBE2+delta)])
 
         #-------------------#
         #--- DOUBLE BOND ---#
@@ -300,8 +312,9 @@ class reax_forcefield:
 
         #De_pi
         De_pi = float(self.twobody[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(De_pi)
         self.twobody[line_number][2+2-1] = '<<De_pi_'+e1+'_'+e2+'>>'
-        self.params_write.append(['De_pi_'+e1+'_'+e2, str(De_pi*(1-bounds)), str(De_pi*(1+bounds))])
+        self.params_write.append(['De_pi_'+e1+'_'+e2, str(De_pi-delta), str(De_pi+delta)])
 
         #-------------------#
         #--- TRIPLE BOND ---#
@@ -315,8 +328,9 @@ class reax_forcefield:
 
         #De_pipi
         De_pipi = float(self.twobody[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(De_pipi)
         self.twobody[line_number][3+2-1] = '<<De_pipi_'+e1+'_'+e2+'>>'
-        self.params_write.append(['De_pipi_'+e1+'_'+e2, str(De_pipi*(1-bounds)), str(De_pipi*(1+bounds))])
+        self.params_write.append(['De_pipi_'+e1+'_'+e2, str(De_pipi-delta), str(De_pipi+delta)])
 
 
 
@@ -354,18 +368,21 @@ class reax_forcefield:
 
         # Dij
         Dij = float(self.offdiagonal[line_number][1+2-1]) # 1st term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(Dij)
         self.offdiagonal[line_number][1+2-1] = '<<Dij_'+e1+'_'+e2+'>>'
-        self.params_write.append(['Dij_'+e1+'_'+e2, str(Dij*(1-bounds)), str(Dij*(1+bounds))])
+        self.params_write.append(['Dij_'+e1+'_'+e2, str(Dij-delta), str(Dij+delta)])
 
         # rvdW
         rvdW = float(self.offdiagonal[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(rvdW)
         self.offdiagonal[line_number][2+2-1] = '<<rvdW_'+e1+'_'+e2+'>>'
-        self.params_write.append(['rvdW_'+e1+'_'+e2, str(rvdW*(1-bounds)), str(rvdW*(1+bounds))])
+        self.params_write.append(['rvdW_'+e1+'_'+e2, str(rvdW-delta), str(rvdW+delta)])
 
         # alpha_ij
         alpha_ij = float(self.offdiagonal[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
+        delta = bounds * np.absolute(alpha_ij)
         self.offdiagonal[line_number][3+2-1] = '<<alpha_ij_'+e1+'_'+e2+'>>'
-        self.params_write.append(['alpha_ij_'+e1+'_'+e2, str(alpha_ij*(1-bounds)), str(alpha_ij*(1+bounds))])
+        self.params_write.append(['alpha_ij_'+e1+'_'+e2, str(alpha_ij-delta), str(alpha_ij+delta)])
 
 
         ### WRITE PARAMETER IN F13
@@ -378,8 +395,9 @@ class reax_forcefield:
 
             # gamma_w
             gamma_w = float(self.onebody[line_number][10-8-1]) # 10th term, -8 for previous line, -1 for 0 indexing
+            delta = bounds * np.absolute(gamma_w)
             self.onebody[line_number][3+2-1] = '<<gamma_w_'+e1+'>>'
-            self.params_write.append(['gamma_w_'+e1, str(gamma_w*(1-bounds)), str(gamma_w*(1+bounds))])
+            self.params_write.append(['gamma_w_'+e1, str(gamma_w-delta), str(gamma_w+delta)])
 
             # gamma_w in element 2 in onebody
             for index, line in enumerate(self.onebody[4::4]):
@@ -389,15 +407,17 @@ class reax_forcefield:
 
             # gamma_w
             gamma_w = float(self.onebody[line_number][10-8-1]) # 10th term, -8 for previous line, -1 for 0 indexing
+            delta = bounds * np.absolute(gamma_w)
             self.onebody[line_number][3+2-1] = '<<gamma_w_'+e2+'>>'
-            self.params_write.append(['gamma_w_'+e2, str(gamma_w*(1-bounds)), str(gamma_w*(1+bounds))])
+            self.params_write.append(['gamma_w_'+e2, str(gamma_w-delta), str(gamma_w+delta)])
 
 
             # Pvdw1 in general parameters
             line_number = 1 + 29  # 29th parameter, +1 for header line
             P_vdW1 = float(self.general[line_number][0])
+            delta = bounds * np.absolute(P_vdW1)
             self.general[line_number][0] = '<<PvdW>>'
-            self.params_write.append(['PvdW', str(P_vdW1*(1-bounds)), str(P_vdW1*(1+bounds))])
+            self.params_write.append(['PvdW', str(P_vdW1-delta), str(P_vdW1+delta)])
 
 
 
@@ -432,16 +452,19 @@ class reax_forcefield:
                     line_number = (1 + (1*index))
 
                     theta0 = float(self.threebody[line_number][1+3-1]) # 1st term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(theta0)
                     self.threebody[line_number][1+3-1] = '<<theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(theta0*(1-bounds)), str(theta0*(1+bounds))])
+                    self.params_write.append(['theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(theta0-delta), str(theta0+delta)])
 
                     Pval1 = float(self.threebody[line_number][2+3-1]) # 2nd term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(Pval1)
                     self.threebody[line_number][2+3-1] = '<<Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval1*(1-bounds)), str(Pval1*(1+bounds))])
+                    self.params_write.append(['Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval1-delta), str(Pval1+delta)])
 
                     Pval2 = float(self.threebody[line_number][3+3-1]) # 3rd term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(Pval2)
                     self.threebody[line_number][3+3-1] = '<<Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval2*(1-bounds)), str(Pval2*(1+bounds))])
+                    self.params_write.append(['Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval2-delta), str(Pval2+delta)])
 
 
 
@@ -477,20 +500,24 @@ class reax_forcefield:
                     line_number = (1 + (1*index))
 
                     V1 = float(self.fourbody[line_number][1+4-1]) # 1st term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(V1)
                     self.fourbody[line_number][1+4-1] = '<<V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V1*(1-bounds)), str(V1*(1+bounds))])
+                    self.params_write.append(['V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V1-delta), str(V1+delta)])
 
                     V2 = float(self.fourbody[line_number][2+4-1]) # 2nd term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(V2)
                     self.fourbody[line_number][2+4-1] = '<<V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V2*(1-bounds)), str(V2*(1+bounds))])
+                    self.params_write.append(['V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V2-delta), str(V2+delta)])
 
                     V3 = float(self.fourbody[line_number][3+4-1]) # 3rd term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(V3)
                     self.fourbody[line_number][3+4-1] = '<<V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V3*(1-bounds)), str(V3*(1+bounds))])
+                    self.params_write.append(['V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V3-delta), str(V3+delta)])
 
                     Ptor1 = float(self.fourbody[line_number][4+4-1]) # 4th term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(Ptor1)
                     self.fourbody[line_number][4+4-1] = '<<Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(Ptor1*(1-bounds)), str(Ptor1*(1+bounds))])
+                    self.params_write.append(['Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(Ptor1-delta), str(Ptor1+delta)])
 
 
 
