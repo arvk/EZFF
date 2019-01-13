@@ -2,7 +2,7 @@
 import numpy as np
 import time
 
-def read_parameter_bounds(filename, verbose=False):
+def read_variable_bounds(filename, verbose=False):
     """Read permissible lower and upper bounds for decision variables used in forcefields optimization
 
     :param filename: Name of text file listing bounds for each decision variable that must be optimized
@@ -11,31 +11,31 @@ def read_parameter_bounds(filename, verbose=False):
     :param verbose: Print all variables read-in
     :type verbose: bool
     """
-    parameter_bounds = {}
+    variable_bounds = {}
     while True: # Force-read the parameter bounds file. This will loop until something is read-in. This is required if multiple ranks access the same file at the same time
         time.sleep(np.random.rand())
-        with open(filename, 'r') as parameter_bounds_file:
-            for line in parameter_bounds_file:
+        with open(filename, 'r') as variable_bounds_file:
+            for line in variable_bounds_file:
                 items = line.strip().split()
                 key, values = items[0], items[1:]
                 if key[0] == '_':
-                    parameter_bounds[key] = list(map(int, values))
+                    variable_bounds[key] = list(map(int, values))
                 else:
-                    parameter_bounds[key] = list(map(float, values))
-        if not parameter_bounds == {}:
+                    variable_bounds[key] = list(map(float, values))
+        if not variable_bounds == {}:
             break
 
     if verbose:
         allkeys = ''
-        for key in parameter_bounds:
+        for key in variable_bounds:
             allkeys += str(key) + ', '
         print('Keys: ' + allkeys[:-2] + ' read from ' + filename)
 
-    return parameter_bounds
+    return variable_bounds
 
 
 
-def read_parameter_template(template_filename):
+def read_forcefield_template(template_filename):
     """Read-in the forcefield template. The template is constructed from a functional forcefield file by replacing all optimizable numerical values with variable names enclosed within dual angled brackets << and >>.
 
     :param template_filename: Name of the forcefield template file to be read-in
@@ -43,8 +43,8 @@ def read_parameter_template(template_filename):
     """
     while True: # Force-read the template forcefield. This will loop until something is read-in. This is required if multiple ranks read the same file at the same time
         time.sleep(np.random.rand())
-        with open(template_filename) as parameter_template_file:
-            template_string = parameter_template_file.read()
+        with open(template_filename) as forcefield_template_file:
+            template_string = forcefield_template_file.read()
         if len(template_string) > 0:
             break
 
