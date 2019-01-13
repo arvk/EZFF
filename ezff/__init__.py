@@ -15,7 +15,7 @@ class OptProblem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
     """
-    def __init__(self, num_errors=None, error_function=None, variables=None, variable_bounds=None, template=None):
+    def __init__(self, num_errors=None, error_function=None, variable_bounds=None, template=None):
         """
         :param num_errors: Number of errors to be minimized for forcefield optimization
         :type num_errors: int
@@ -29,6 +29,7 @@ class OptProblem(Problem):
         :param template: Forcefield template
         :type template: str
         """
+        variables = [key for key in variable_bounds.keys()]
         super(OptProblem, self).__init__(len(variables), num_errors)
         for counter, value in enumerate(variables):
             if value[0] == '_':
@@ -37,8 +38,8 @@ class OptProblem(Problem):
                 self.types[counter] = Real(variable_bounds[value][0], variable_bounds[value][1])
 
         self.error_function = error_function
-        self.variables = variables
         self.directions = [Problem.MINIMIZE for error in range(num_errors)]
+        self.variables = variables
         self.template = template
 
     def evaluate(self, solution):
@@ -137,7 +138,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     :type iterations: int
 
     :param write_forcefields: All non-dominated forcefields are written out every ``write_forcefields`` epochs. If this is ``None``, the forcefields are written out for the first and last epoch
-    :type writE_forcefields: int or None
+    :type write_forcefields: int or None
 
     """
     if not isinstance(write_forcefields, int):
