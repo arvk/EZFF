@@ -49,7 +49,7 @@ Features demonstrated in this example
 
 rxff-serial
 --------------
-Optimization of ReaxFF forcefield for a thio-ketone monomer against 2 objectives -- **Dissociation energy** of the C-S bond and C-S **vibrational frequency**
+Optimization of ReaxFF forcefield for a thio-ketone monomer against 1 objective -- **C-S vibrational frequency**
 
 Features demonstrated in this example
 
@@ -66,3 +66,4 @@ Features demonstrated in this example
 
 1. All features from rxff-serial
 2. Using utils.reaxff methods for generating forcefields templates and variable range files
+3. Heterogeneous weighting scheme for calculating errors from potential energy surface scans
