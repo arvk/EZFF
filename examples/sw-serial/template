@@ -1,0 +1,13 @@
+
+# E = A.exp(rho/(r-rmax)).(B/r**4 - 1)
+# atom1 atom2 A gamma B rmin rmax <3*flags>
+sw2
+Se   Se     <<A>>    1.675    <<D>>   0.00 4.492860  1 0 0
+Mo   Se     <<B>>    0.390    <<E>>   0.00 3.344970  1 0 0
+Mo   Mo     <<C>>    0.339    <<F>>   0.00 4.492860  1 0 0
+
+# E(three) = lambda * exp(gamma0/(r12-rmax12) + gamma1/(r13-rmax13))(cos-ct0)**2
+# atom1 atom2 atom3 lambda theta0 gamma0 gamma1 <rmin12> rmax12 <rmin13> rmax13 <rmin23> rmax23 <4*flags>
+sw3
+Mo  Se Se 66.026 80.8330 1.708 1.708 0.0 3.344970 0.0 3.344970 0.0 4.492860 1 0 0 0
+Se Mo  Mo  23.488 80.8330 5.711 5.711 0.0 3.344970 0.0 3.344970 0.0 4.492860 1 0 0 0
