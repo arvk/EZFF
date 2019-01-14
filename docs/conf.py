@@ -14,6 +14,7 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
 sys.path.append(os.path.abspath('../ezff'))
 sys.path.append(os.path.abspath('..'))
 # sys.path.insert(0, os.path.abspath('.'))
