@@ -112,7 +112,7 @@ class job:
         if header_line == '':
             header_line = 'single '
 
-        header_line += 'comp '
+        header_line += 'comp property '
         script.write(header_line + '\n')
 
         script.write('\n')
