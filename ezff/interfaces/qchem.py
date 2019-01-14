@@ -53,54 +53,52 @@ def read_ground_state(outfilename):
 
 
 
-def read_scan(outfilename, previous_scan = None):
+def read_scan(outfilename):
     """
     Read-in a multiple partially-converged structures from a PES scan (including bond-scans, angle-scans and dihedral-scans)
 
-    :param outfilename: Filename for ``stdout`` from the QChem PES scan job
+    :param outfilename: Single filename for ``stdout`` from the QChem PES scan job or a list of filenames for ``stdout`` files from partial QChem PES scan jobs
     :type outfilename: str
-
-    :param previous_scan: ``xtal`` trajectory object from a previous scan, in case of continuation scans
-    :type previous_scan: ``xtal`` trajectory
 
     :returns: ``xtal`` trajectory object with structures and converged energies along the PES scan as individual snapshots
     """
     structure = xtal.AtTraj()
-
-    # Read energies
     energies = []
-    outfile = open(outfilename,'r')
-    for line in outfile:
-        if 'Final energy is' in line:
-            energy_in_Hartrees = float(line.strip().split()[-1])
-            energies.append(energy_in_Hartrees * convert.energy['Ha']['eV'])
-    outfile.close()
 
-    # Read structure
-    outfile = open(outfilename,'r')
-    for line in outfile:
-        if 'OPTIMIZATION CONVERGED' in line:
-            snapshot = structure.create_snapshot(xtal.Snapshot)
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            # Atomic coordinates start here
-            while True:
-                coords = outfile.readline()
-                if coords.strip()=='':
-                    break
-                atom = snapshot.create_atom(xtal.Atom)
-                atom.element, atom.cart = coords.strip().split()[1], np.array(list(map(float,coords.strip().split()[2:5])))
+    if isinstance(outfilename, list):
+        listfilenames = outfilename
+    else:
+        listfilenames = [outfilename]
 
-    outfile.close()
+    for single_outfilename in list(listfilenames):
+        # Read energies
+        outfile = open(single_outfilename,'r')
+        for line in outfile:
+            if 'Final energy is' in line:
+                energy_in_Hartrees = float(line.strip().split()[-1])
+                energies.append(energy_in_Hartrees * convert.energy['Ha']['eV'])
+        outfile.close()
+
+        # Read structure
+        outfile = open(single_outfilename,'r')
+        for line in outfile:
+            if 'OPTIMIZATION CONVERGED' in line:
+                snapshot = structure.create_snapshot(xtal.Snapshot)
+                dummyline = outfile.readline()
+                dummyline = outfile.readline()
+                dummyline = outfile.readline()
+                dummyline = outfile.readline()
+                # Atomic coordinates start here
+                while True:
+                    coords = outfile.readline()
+                    if coords.strip()=='':
+                        break
+                    atom = snapshot.create_atom(xtal.Atom)
+                    atom.element, atom.cart = coords.strip().split()[1], np.array(list(map(float,coords.strip().split()[2:5])))
+
+        outfile.close()
 
     for counter, snapshot in enumerate(structure.snaplist):
         snapshot.energy = energies[counter]
 
-    if not previous_scan is None:
-        for snapshot in structure.snaplist:
-            previous_scan.snaplist.append(snapshot)
-        return previous_scan
-    else:
-        return structure
+    return structure
