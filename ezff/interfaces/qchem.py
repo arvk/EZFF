@@ -53,12 +53,16 @@ def read_ground_state(outfilename):
 
 
 
-def read_scan(outfilename):
+def read_scan(outfilename, previous_scan = None):
     """
     Read-in a multiple partially-converged structures from a PES scan (including bond-scans, angle-scans and dihedral-scans)
 
     :param outfilename: Filename for ``stdout`` from the QChem PES scan job
     :type outfilename: str
+
+    :param previous_scan: ``xtal`` trajectory object from a previous scan, in case of continuation scans
+    :type previous_scan: ``xtal`` trajectory
+
     :returns: ``xtal`` trajectory object with structures and converged energies along the PES scan as individual snapshots
     """
     structure = xtal.AtTraj()
@@ -94,4 +98,9 @@ def read_scan(outfilename):
     for counter, snapshot in enumerate(structure.snaplist):
         snapshot.energy = energies[counter]
 
-    return structure
+    if not previous_scan is None:
+        for snapshot in structure.snaplist:
+            previous_scan.snaplist.append(snapshot)
+        return previous_scan
+    else:
+        return structure
