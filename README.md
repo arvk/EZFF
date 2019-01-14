@@ -1,5 +1,7 @@
 # EZFF
 
+[![Documentation Status](https://readthedocs.org/projects/ezff/badge/?version=latest)](https://ezff.readthedocs.io/en/latest/?badge=latest)
+
 Python-based library for easy force-field fitting
 
 ## Installation
