@@ -11,7 +11,7 @@ except ImportError:
     pass
 from .ffio import write_forcefield_file
 
-__version__ = '0.9.1' # Update setup.py if version changes
+__version__ = '0.9.2' # Update setup.py if version changes
 
 class OptProblem(Problem):
     """
