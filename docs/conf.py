@@ -26,7 +26,7 @@ copyright = '2019, Aravind Krishnamoorthy'
 author = 'Aravind Krishnamoorthy'
 
 # The short X.Y version
-version = '0.9'
+version = '0.9.1'
 # The full version, including alpha/beta/rc tags
 release = '0.9 Beta'
 

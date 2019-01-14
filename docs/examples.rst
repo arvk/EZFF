@@ -3,6 +3,27 @@ Examples
 The following forcefield optimization examples showcase the features of EZFF
 
 
+lj-serial
+------------
+Optimization of a Lennard-Jones forcefield for FCC Neon against 2 objectives -- **bulk modulus** and **lattice constant**
+
+Features demonstrated in this example
+
+1. Basic use of forcefield templates and variable_range files
+2. Reading-in elastic modulus tensor from GULP run
+3. Reading-in lattice constants after a GULP run
+
+
+lj-parallel
+------------
+Parallel optimization of a Lennard-Jones forcefield for FCC Neon against 2 objectives -- **bulk modulus** and **lattice constant**
+
+Features demonstrated in this example
+
+1. All features from lj-serial
+2. Basic use of ezff.Pool for parallel optimization
+
+
 sw-serial
 ------------
 Optimization of a Stillinger-Weber forcefield for the 2H-MoSe2 monolayer system against 3 objectives -- **Lattice constant** (*a*), **Elastic modulus** (:math:`C_{11}`) and **Phonon dispersion**

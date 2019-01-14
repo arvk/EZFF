@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to EZFF's documentation!
-================================
+EZFF -- Easy Multi-objective Forcefield Optimization
+====================================================
 
 EZFF is a Python-based library for quick and easy parameterization of forcefields and interatomic potentials for molecular dynamics simulations. EZFF provides interfaces to popular atomistic simulation software, GULP, VASP and QChem and uses Platypus for solving multi-objective optimization problems. Use the links below to get started.
 
