@@ -6,18 +6,45 @@
 Welcome to EZFF's documentation!
 ================================
 
-EZFF is a Python-based library for easy optimization of forcefields for molecular dynamics simulations.
+EZFF is a Python-based library for quick and easy parameterization of forcefields and interatomic potentials for molecular dynamics simulations. EZFF provides interfaces to popular atomistic simulation software, GULP, VASP and QChem and uses Platypus for solving multi-objective optimization problems. Use the links below to get started.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   ezff
-   ffio
-   interfaces.vasp
-   interfaces.qchem
-   interfaces.gulp
-   utils.reaxff
+   basic
+   examples
+   code_documentation
+
+
+Installing
+==========
+Install from PyPI using the command
+
+.. code:: shell
+
+   pip install EZFF
+
+
+Alternatively, you can install the latest developmental version from GitHub via
+
+.. code:: shell
+
+   git clone https://github.com/arvk/EZFF.git
+   cd EZFF
+   python setup.py install
+
+
+Contributing
+============
+1. Please make sure to submit only passing builds
+2. Adhere to PEP8 where you can
+3. Submit a pull request
+
+
+License
+=======
+EZFF source code and documentation is released under the MIT License
 
 
 Indices and tables

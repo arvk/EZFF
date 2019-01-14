@@ -28,7 +28,7 @@ author = 'Aravind Krishnamoorthy'
 # The short X.Y version
 version = '0.9'
 # The full version, including alpha/beta/rc tags
-release = '0.9 beta'
+release = '0.9 Beta'
 
 
 # -- General configuration ---------------------------------------------------
@@ -72,7 +72,7 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'MPIPool']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = None
+pygments_style = 'colorful'
 
 
 # -- Options for HTML output -------------------------------------------------
