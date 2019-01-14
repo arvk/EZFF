@@ -1,0 +1,3 @@
+platypus-opt>=1.0.3
+mpi4py>=3.0.0
+xtal>=0.9.0
