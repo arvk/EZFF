@@ -66,7 +66,7 @@ def my_error_function(rr):
     gt_scan_energies = np.array(gt_scan_energies)
     md_gs_energy = np.array(md_gs_energy)
     gt_gs_energy = np.array(gt_gs_energy)
-    total_error = np.linalg.norm( (md_scan_energies-md_gs_energy) - (gt_scan_energies-gt_gs_energy) )
+    total_error = ezff.error_PES_scan( md_scan_energies-md_gs_energy, gt_scan_energies-gt_gs_energy, weights = 'uniform')
 
     return [total_error]
 
