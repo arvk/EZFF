@@ -11,6 +11,8 @@ except ImportError:
     pass
 from .ffio import write_forcefield_file
 
+__version__ = '0.9.0' # Update setup.py if version changes
+
 class OptProblem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
