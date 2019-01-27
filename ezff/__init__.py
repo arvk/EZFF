@@ -92,12 +92,16 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
 
     # Create array of weights - one value per band
     num_band = len(md_disp)
-    W = np.ones(num_band)
     if weights == 'uniform':
-        pass
+        W = np.ones(num_band)
     elif weights == 'acoustic':
         maxfreq = np.amax(gt_disp)
         W = np.reciprocal((np.mean(gt_disp, axis=1)/maxfreq) + 0.1)
+    elif isinstance(weights,list) or isinstance(weights,np.ndarray):
+        if len(weights) == num_band:
+            W = np.array(weights)
+        else:
+            raise ValueError("Number of provided weight values is different from number of bands! Aborting")
 
     # Compute the RMS error between dispersions
     rms_error = 0.0
