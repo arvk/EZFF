@@ -253,6 +253,7 @@ def pick_algorithm(myproblem, algorithm, population=1024, evaluator=None):
         else:
             return NSGAII(myproblem, population_size=population, evaluator=evaluator)
     elif algorithm.lower().upper() == 'NSGAIII':
+        num_errors = len(myproblem.directions)
         divisions = int(np.power(population * np.math.factorial(num_errors-1), 1.0/(num_errors-1))) + 2 - num_errors
         divisions = np.maximum(1, divisions)
         if evaluator is None:
