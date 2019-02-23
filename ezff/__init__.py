@@ -5,6 +5,7 @@ import xtal
 import numpy as np
 from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
 from platypus.types import Real, Integer
+from platypus.operators import InjectedPopulation
 try:
     from platypus.mpipool import MPIPool
 except ImportError:
@@ -201,40 +202,65 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     :type write_forcefields: int or None
 
     """
-    if not isinstance(write_forcefields, int):
-        write_forcefields = iterations
-    for i in range(0, iterations):
-        print('Epoch: '+ str(i))
-        algorithm.step()
 
-        # Make output files/directories
-        outdir = 'results/' + str(i)
-        if not os.path.isdir(outdir):
-            os.makedirs(outdir)
+    # Convert algorithm and iterations into lists
+    if not isinstance(algorithm, list):
+        algorithm = [algorithm]
+    if not isinstance(iterations, list):
+        iterations = [iterations]
 
-        varfilename = outdir + '/variables'
-        objfilename = outdir + '/errors'
-        varfile = open(varfilename, 'w')
-        objfile = open(objfilename, 'w')
-        for solution in unique(nondominated(algorithm.result)):
-            varfile.write(' '.join([str(variables) for variables in solution.variables]))
-            varfile.write('\n')
-            objfile.write(' '.join([str(objective) for objective in solution.objectives]))
-            objfile.write('\n')
-        varfile.close()
-        objfile.close()
+    if not len(algorithm) == len(iterations):
+        raise ValueError("Please provide a maximum number of epochs for each algorithm")
 
-        if i % (write_forcefields-1) == 0:
-            if not os.path.isdir(outdir+'/forcefields'):
-                os.makedirs(outdir+'/forcefields')
-            for sol_index, solution in enumerate(unique(nondominated(algorithm.result))):
-                ff_name = outdir + '/forcefields/FF_' + str(sol_index)
-                parameters_dict = dict(zip(problem.variables, solution.variables))
-                write_forcefield_file(ff_name, problem.template, parameters_dict, verbose=False)
+    total_epochs = 0
+    current_solutions = None
+    for stage in range(0,len(algorithm)):
+
+        # Construct an algorithm
+        algorithm_for_this_stage = generate_algorithm(algorithm[stage]["myproblem"],
+                                                      algorithm[stage]["algorithm_string"],
+                                                      algorithm[stage]["population"],
+                                                      current_solutions,
+                                                      algorithm[stage]["pool"])
+
+        if not isinstance(write_forcefields, int):
+            write_forcefields = iterations[stage]
+
+        for i in range(0, iterations[stage]):
+            total_epochs += 1
+            print('Epoch: '+ str(total_epochs))
+            algorithm_for_this_stage.step()
+
+            # Make output files/directories
+            outdir = 'results/' + str(total_epochs)
+            if not os.path.isdir(outdir):
+                os.makedirs(outdir)
+
+            varfilename = outdir + '/variables'
+            objfilename = outdir + '/errors'
+            varfile = open(varfilename, 'w')
+            objfile = open(objfilename, 'w')
+            for solution in unique(nondominated(algorithm_for_this_stage.result)):
+                varfile.write(' '.join([str(variables) for variables in solution.variables]))
+                varfile.write('\n')
+                objfile.write(' '.join([str(objective) for objective in solution.objectives]))
+                objfile.write('\n')
+            varfile.close()
+            objfile.close()
+
+            if total_epochs % (write_forcefields-1) == 0:
+                if not os.path.isdir(outdir+'/forcefields'):
+                    os.makedirs(outdir+'/forcefields')
+                for sol_index, solution in enumerate(unique(nondominated(algorithm_for_this_stage.result))):
+                    ff_name = outdir + '/forcefields/FF_' + str(sol_index)
+                    parameters_dict = dict(zip(problem.variables, solution.variables))
+                    write_forcefield_file(ff_name, problem.template, parameters_dict, verbose=False)
+
+            current_solutions = algorithm_for_this_stage.population
 
 
 
-def pick_algorithm(myproblem, algorithm, population=1024, evaluator=None):
+def pick_algorithm(myproblem, algorithm, population=1024, current_solution=None, evaluator=None):
     """
     Return a serial or parallel platypus.Algorithm object based on input string
 
@@ -253,27 +279,49 @@ def pick_algorithm(myproblem, algorithm, population=1024, evaluator=None):
 
     if algorithm.lower().upper() == 'NSGAII':
         if evaluator is None:
-            return NSGAII(myproblem, population_size=population)
+            if current_solution is None:
+                return NSGAII(myproblem, population_size=population)
+            else:
+                return NSGAII(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]))
         else:
-            return NSGAII(myproblem, population_size=population, evaluator=evaluator)
+            if current_solution is None:
+                return NSGAII(myproblem, population_size=population, evaluator=evaluator)
+            else:
+                return NSGAII(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
     elif algorithm.lower().upper() == 'NSGAIII':
         num_errors = len(myproblem.directions)
         divisions = int(np.power(population * np.math.factorial(num_errors-1), 1.0/(num_errors-1))) + 2 - num_errors
         divisions = np.maximum(1, divisions)
         if evaluator is None:
-            return NSGAIII(myproblem, divisions_outer=divisions)
+            if current_solution is None:
+                return NSGAIII(myproblem, divisions_outer=divisions)
+            else:
+                return NSGAIII(myproblem, divisions_outer=divisions, generator=InjectedPopulation(current_solution[0:population]))
         else:
-            return NSGAIII(myproblem, divisions_outer=divisions, evaluator=evaluator)
+            if current_solution is None:
+                return NSGAIII(myproblem, divisions_outer=divisions, evaluator=evaluator)
+            else:
+                return NSGAIII(myproblem, divisions_outer=divisions, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
     elif algorithm.lower().upper() == 'IBEA':
         if evaluator is None:
-            return IBEA(myproblem, population_size=population)
+            if current_solution is None:
+                return IBEA(myproblem, population_size=population)
+            else:
+                return IBEA(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]))
         else:
-            return IBEA(myproblem, population_size=population, evaluator=evaluator)
+            if current_solution is None:
+                return IBEA(myproblem, population_size=population, evaluator=evaluator)
+            else:
+                return IBEA(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
     else:
         raise Exception('Please enter an algorithm for optimization. NSGAII , NSGAIII , IBEA are supported')
 
 
+
 def Algorithm(myproblem, algorithm_string, population=1024, pool=None):
+    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "pool": pool}
+
+def generate_algorithm(myproblem, algorithm_string, population=1024, current_solution=None, pool=None):
     """
     Provide a uniform interface to initialize an algorithm class for serial and parallel execution
 
@@ -290,12 +338,12 @@ def Algorithm(myproblem, algorithm_string, population=1024, pool=None):
     :type pool: MPIPool or None
     """
     if pool is None:
-        algorithm = pick_algorithm(myproblem, algorithm_string, population=population)
+        algorithm = pick_algorithm(myproblem, algorithm_string, population=population, current_solution=current_solution)
     else:
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
         else:
             evaluator = PoolEvaluator(pool)
-            algorithm = pick_algorithm(myproblem, algorithm_string, population=population, evaluator=evaluator)
+            algorithm = pick_algorithm(myproblem, algorithm_string, population=population, current_solution=current_solution, evaluator=evaluator)
     return algorithm
