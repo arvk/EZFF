@@ -1,0 +1,10 @@
+language: python
+notifications:
+  email: false
+python:
+  - "3.6"
+before_script:
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)
+  - pip install xtal
+  - pip install mpi4py
+  - pip install platypus-opt
