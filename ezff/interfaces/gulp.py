@@ -284,3 +284,161 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     pbs = np.array(pbs).reshape((100,num_bands)).T
     pbs *= convert.frequency[units]['THz']
     return pbs
+
+
+
+def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False):
+    if not relax_atoms:  # If atoms are not relaxed (i.e. single point calculation, then return 0.0)
+        return 0.0       # In the future, add a info/warning message in the log
+
+    if relax_atoms:      # If atoms are leaxed, then create 2 atomic trajectories, one for each of the initial and relaxed structures
+        initial = xtal.AtTraj()
+        initial_snapshot = initial.create_snapshot(xtal.Snapshot)
+        relaxed = xtal.AtTraj()
+        relaxed_snapshot = relaxed.create_snapshot(xtal.Snapshot)
+
+        # Read number of atoms
+        outfile = open(outfilename, 'r')
+        for line in outfile:
+            if 'Number of irreducible atoms/shells' in line.strip():
+                num_atoms = int(line.strip().split()[-1])
+        outfile.close()
+
+        for atomID in range(num_atoms):
+            initial_snapshot.create_atom(xtal.Atom)
+            initial_snapshot.atomlist[atomID].cart = np.array([0.0,0.0,0.0])
+            initial_snapshot.atomlist[atomID].fract = np.array([0.0,0.0,0.0])
+            relaxed_snapshot.create_atom(xtal.Atom)
+            relaxed_snapshot.atomlist[atomID].cart = np.array([0.0,0.0,0.0])
+            relaxed_snapshot.atomlist[atomID].fract = np.array([0.0,0.0,0.0])
+
+        if relax_cell:     # In atoms are relaxed, and simulation cell is also relaxed
+            convert_to_cart = True # We have to read in 2 box sizes, one for the initial cell and one for the relaxed cell
+            outfile = open(outfilename, 'r')
+            for oneline in outfile:
+                if 'Comparison of initial and final' in oneline:
+                    dummyline = outfile.readline()
+                    dummyline = outfile.readline()
+                    dummyline = outfile.readline()
+                    dummyline = outfile.readline()
+                    while True:
+                        data = outfile.readline().strip().split()
+                        if data[0].isdigit():
+                            atomID = int(data[0])-1
+                            if data[1] == 'x':
+                                axisID = 0
+                            elif data[1] == 'y':
+                                axisID = 1
+                            else:
+                                axisID = 2
+
+                            if data[5] == 'Cartesian':
+                                initial_snapshot.atomlist[atomID].cart[axisID] = float(data[2])
+                                relaxed_snapshot.atomlist[atomID].cart[axisID] = float(data[3])
+                                convert_to_cart = False
+                            elif data[5] == 'Fractional':
+                                initial_snapshot.atomlist[atomID].fract[axisID] = float(data[2])
+                                relaxed_snapshot.atomlist[atomID].fract[axisID] = float(data[3])
+                        elif data[0][0] == '-':
+                            break
+                    break
+            outfile.close()
+
+            if convert_to_cart: # READ TWO CELL SIZES - ONE FOR THE INITIAL CELL, ONE FOR THE RELAXED CELL
+                outfile = open(outfilename, 'r')
+                for oneline in outfile:
+                    if 'Comparison of initial and final' in oneline:
+                        dummyline = outfile.readline()
+                        dummyline = outfile.readline()
+                        dummyline = outfile.readline()
+                        dummyline = outfile.readline()
+                        while True:
+                            data = outfile.readline().strip().split()
+                            if data[0] == 'a':
+                                initial.abc[0], relaxed.abc[0] = float(data[1]), float(data[2])
+                            elif data[0] == 'b':
+                                initial.abc[1], relaxed.abc[1] = float(data[1]), float(data[2])
+                            elif data[0] == 'c':
+                                initial.abc[2], relaxed.abc[2] = float(data[1]), float(data[2])
+                            elif data[0] == 'alpha':
+                                initial.ang[0], relaxed.ang[0] = float(data[1]), float(data[2])
+                            elif data[0] == 'beta':
+                                initial.ang[1], relaxed.ang[1] = float(data[1]), float(data[2])
+                            elif data[0] == 'gamma':
+                                initial.ang[2], relaxed.ang[2] = float(data[1]), float(data[2])
+                            elif data[0][0] == '-':
+                                break
+                        break
+                outfile.close()
+                initial.abc_to_box()
+                relaxed.abc_to_box()
+                initial.make_dircar_matrices()
+                relaxed.make_dircar_matrices()
+                initial.dirtocar()
+                relaxed.dirtocar()
+                error = 0.0
+                for i in range(len(initial.snaplist[0].atomlist)):
+                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
+                    error += np.inner(dr, dr)
+            else:
+                error = 0.0
+                for i in range(len(initial.snaplist[0].atomlist)):
+                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
+                    error += np.inner(dr, dr)
+            return error
+
+        else:     # IF THE CELL IS NOT RELAXED. JUST THE ATOMS ARE RELAXED
+            convert_to_cart = True
+            outfile = open(outfilename, 'r')
+            for oneline in outfile:
+                if 'Comparison of initial and final' in oneline:
+                    dummyline = outfile.readline()
+                    dummyline = outfile.readline()
+                    dummyline = outfile.readline()
+                    dummyline = outfile.readline()
+                    while True:
+                        data = outfile.readline().strip().split()
+                        if data[0].isdigit():
+                            atomID = int(data[0])-1
+                            if data[1] == 'x':
+                                axisID = 0
+                            elif data[1] == 'y':
+                                axisID = 1
+                            else:
+                                axisID = 2
+
+                            if data[5] == 'Cartesian':
+                                initial_snapshot.atomlist[atomID].cart[axisID] = float(data[2])
+                                relaxed_snapshot.atomlist[atomID].cart[axisID] = float(data[3])
+                                convert_to_cart = False
+                            elif data[5] == 'Fractional':
+                                initial_snapshot.atomlist[atomID].fract[axisID] = float(data[2])
+                                relaxed_snapshot.atomlist[atomID].fract[axisID] = float(data[3])
+                        elif data[0][0] == '-':
+                            break
+                    break
+            outfile.close()
+
+            if convert_to_cart:
+                outfile = open(outfilename, 'r')   ### READ A SINGLE BOX SIZE FOR THE INITIAL AND RELAXED STRUCTURES
+                for oneline in outfile:
+                    if 'Cartesian lattice vectors (Angstroms)' in oneline:
+                        dummyline = outfile.readline()
+                        for i in range(3):
+                            initial.box[i][0:3] = list(map(float,outfile.readline().strip().split()))
+                outfile.close()
+                relaxed.box = initial.box
+                initial.make_dircar_matrices()
+                relaxed.make_dircar_matrices()
+                initial.dirtocar()
+                relaxed.dirtocar()
+                error = 0.0
+                for i in range(len(initial.snaplist[0].atomlist)):
+                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
+                    error += np.inner(dr, dr)
+            else:
+                error = 0.0
+                for i in range(len(initial.snaplist[0].atomlist)):
+                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
+                    error += np.inner(dr, dr)
+            return error
