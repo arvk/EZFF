@@ -380,11 +380,13 @@ def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False)
                 relaxed.make_dircar_matrices()
                 initial.dirtocar()
                 relaxed.dirtocar()
+                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
                 error = 0.0
                 for i in range(len(initial.snaplist[0].atomlist)):
                     dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
                     error += np.inner(dr, dr)
             else:
+                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
                 error = 0.0
                 for i in range(len(initial.snaplist[0].atomlist)):
                     dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
@@ -436,11 +438,13 @@ def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False)
                 relaxed.make_dircar_matrices()
                 initial.dirtocar()
                 relaxed.dirtocar()
+                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
                 error = 0.0
                 for i in range(len(initial.snaplist[0].atomlist)):
                     dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
                     error += np.inner(dr, dr)
             else:
+                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
                 error = 0.0
                 for i in range(len(initial.snaplist[0].atomlist)):
                     dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
