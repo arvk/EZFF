@@ -293,8 +293,12 @@ def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False)
 
     if relax_atoms:      # If atoms are leaxed, then create 2 atomic trajectories, one for each of the initial and relaxed structures
         initial = xtal.AtTraj()
+        initial.abc = np.array([0.0,0.0,0.0])
+        initial.ang = np.array([0.0,0.0,0.0])
         initial_snapshot = initial.create_snapshot(xtal.Snapshot)
         relaxed = xtal.AtTraj()
+        relaxed.abc = np.array([0.0,0.0,0.0])
+        relaxed.ang = np.array([0.0,0.0,0.0])
         relaxed_snapshot = relaxed.create_snapshot(xtal.Snapshot)
 
         # Read number of atoms
