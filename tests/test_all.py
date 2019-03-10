@@ -12,7 +12,7 @@ def test_structure_distortion_nobox():
 
 def test_structure_distortion_nooptim():
     test_value = gulp.error_structure_distortion('gulp_output_files/out.mote2.nooptim', relax_atoms=False, relax_cell=False)
-    ground_truth = pytest.approx(0.0,0.01)
+    ground_truth = 0.0
     assert (test_value == ground_truth)
 
 def test_structure_distortion_optim():
@@ -28,4 +28,9 @@ def test_structure_distortion_sheared():
 def test_structure_distortion_lj():
     test_value = gulp.error_structure_distortion('gulp_output_files/out.lj.optim', relax_atoms=True, relax_cell=True)
     ground_truth = pytest.approx(0.03,0.5)
+    assert (test_value == ground_truth)
+
+def test_structure_distortion_reaxff_singlepoint():
+    test_value = gulp.error_structure_distortion('gulp_output_files/out.reaxff.singlepoint', relax_atoms=False, relax_cell=False)
+    ground_truth = 0.0
     assert (test_value == ground_truth)
