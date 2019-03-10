@@ -8,3 +8,6 @@ before_script:
   - pip install xtal
   - pip install mpi4py
   - pip install platypus-opt
+script:
+  - cd tests
+  - pytest -v
