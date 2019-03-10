@@ -9,6 +9,10 @@ before_script:
   - pip install xtal
   - pip install mpi4py
   - pip install platypus-opt
+  - pip install pytest-cov
+  - pip install coveralls
 script:
   - cd tests
-  - pytest -v
+  - pytest -v --cov=ezff
+afater_success:
+  - coveralls
