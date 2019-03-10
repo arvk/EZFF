@@ -1,6 +1,6 @@
 # EZFF
 
-[![Build Status](https://travis-ci.org/arvk/EZFF.svg?branch=master)](https://travis-ci.org/arvk/EZFF) [![Documentation Status](https://readthedocs.org/projects/ezff/badge/?version=latest)](https://ezff.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/EZFF.svg)](https://badge.fury.io/py/EZFF)
+[![Build Status](https://travis-ci.org/arvk/EZFF.svg?branch=master)](https://travis-ci.org/arvk/EZFF) [![Documentation Status](https://readthedocs.org/projects/ezff/badge/?version=latest)](https://ezff.readthedocs.io/en/latest/?badge=latest) [![Coverage Status](https://coveralls.io/repos/github/arvk/EZFF/badge.svg?branch=master)](https://coveralls.io/github/arvk/EZFF?branch=master) [![PyPI version](https://badge.fury.io/py/EZFF.svg)](https://badge.fury.io/py/EZFF)
 
 Python-based library for easy force-field fitting
 
