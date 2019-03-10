@@ -14,5 +14,5 @@ before_script:
 script:
   - cd tests
   - pytest -v --cov=ezff
-afater_success:
+after_success:
   - coveralls
