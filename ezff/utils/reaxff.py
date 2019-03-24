@@ -116,7 +116,46 @@ class reax_forcefield:
                 return i+1
         return 0
 
+    def template_qeq(self, e1, bounds):
+       """
+       Generate decision variable for electrostatic energy equation for a particular element
 
+       :param e1: Chemical symbol for element 1
+       :type e1: str
+
+       :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+       :type bounds: float
+
+       """
+       ie1 = self.get_element_number(e1)
+       if ie1 == 0: return
+
+       # gamma, chi and eta
+       for index, line in enumerate(self.onebody[4::4]):
+           if (line[0] == e1):
+               break
+       line_number = 3 + (4*index) + 1
+
+       gamma = float(self.onebody[line_number-1][6-1]) #  6th term, -1 for 0 indexing
+       chi   = float(self.onebody[line_number][14-8-1]) # 14th term, -8 for previous line, -1 for 0 indexing
+       eta   = float(self.onebody[line_number][15-8-1]) # 15th term, -8 for previous line, -1 for 0 indexing
+
+       # gamma
+       self.onebody[line_number-1][6-1] = '<<gam_'+e1+'_'+'>>'
+       delta = bounds * np.absolute(gamma)
+       self.params_write.append(['gam_'+e1, str(gamma-delta), str(gamma+delta)])
+
+       # chi
+       self.onebody[line_number][14-8-1] = '<<chi_'+e1+'_'+'>>'
+       delta = bounds * np.absolute(chi)
+       self.params_write.append(['chi_'+e1, str(chi-delta), str(chi+delta)])
+
+       # eta
+       self.onebody[line_number][15-8-1] = '<<eta_'+e1+'_'+'>>'
+       delta = bounds * np.absolute(eta)
+       self.params_write.append(['eta_'+e1, str(eta-delta), str(eta+delta)])
+
+       return
 
     def template_bond_order(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
         """
@@ -335,13 +374,6 @@ class reax_forcefield:
 
 
 
-
-
-
-
-
-
-
     def template_bond_energy_vdW(self, e1, e2, f13 = False, bounds = 0.1):
         """
         Generate decision variables related to the two-body repulsive (i.e. van der Waals) term
@@ -547,6 +579,20 @@ class reax_forcefield:
                 template.write(' '.join(line)+'\n')
 
 
+    def make_template_qeq(self, e1, bounds=0.1):
+        """
+        Function to generate decision variable for Charge Equilibration (QEq) terms 
+
+        : param e1 : Chemical symbol for element 1
+        : type e1  : str
+
+        : param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        : type bounds: float
+ 
+        """
+        # GET ONE_BODY_PARAMETERS SPECIFIC TO QEQ
+        self.template_qeq(e1,bounds)
+        return
 
 
     def make_template_twobody(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1, common = False):
