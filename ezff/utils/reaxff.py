@@ -374,6 +374,7 @@ class reax_forcefield:
 
 
 
+
     def template_bond_energy_vdW(self, e1, e2, f13 = False, bounds = 0.1):
         """
         Generate decision variables related to the two-body repulsive (i.e. van der Waals) term
