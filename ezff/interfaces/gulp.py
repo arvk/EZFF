@@ -112,7 +112,7 @@ class job:
         if header_line == '':
             header_line = 'single '
 
-        header_line += 'comp property '
+        header_line += 'comp property qeq '
         script.write(header_line + '\n')
 
         script.write('\n')
@@ -285,7 +285,54 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     pbs *= convert.frequency[units]['THz']
     return pbs
 
+def read_atomic_charges(outfilename):
+    """
+    Read atomic charge information from a completed GULP job
 
+    : param outfilename : Path of the file containing information about the gulp run
+    : returns: xtal object with optimized charge information
+    """
+
+    structure = xtal.AtTraj()
+    snapshot = structure.create_snapshot(xtal.Snapshot)
+    outfile = open(outfilename, 'r')
+
+    natoms = None
+
+    for line in outfile:
+
+        if 'Total number atoms/shells' in line:
+            natoms = int(line.strip().split()[-1])
+
+        if 'Final charges from QEq' in line:
+            snapshot.atomlist = []
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            # Atomic Charge information starts here
+            counter = 0
+            while True:
+                charges = outfile.readline()
+                charges = charges.strip().split()
+                atom = snapshot.create_atom(xtal.Atom)
+                if float(charges[1]) == 1:
+                    atom.element = 'H'
+                if float(charges[1]) == 6:
+                    atom.element = 'C'
+                if float(charges[1]) == 7:
+                    atom.element = 'N'
+                if float(charges[1]) == 8:
+                    atom.element = 'O'
+
+                atom.charge = float(charges[2])
+                
+                counter += 1
+                if counter == natoms:
+                    break
+            
+
+    return structure
 
 def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False):
     if not relax_atoms:  # If atoms are not relaxed (i.e. single point calculation, then return 0.0)

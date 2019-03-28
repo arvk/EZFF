@@ -342,34 +342,35 @@ class reax_forcefield:
         #-------------------#
         #--- DOUBLE BOND ---#
         #-------------------#
+        if double_bond:
+            # De_pi
+            for index, line in enumerate(self.twobody[2::2]):
+                if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                    break
+            line_number = (2 + (2*index))
 
-        # De_pi
-        for index, line in enumerate(self.twobody[2::2]):
-            if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
-                break
-        line_number = (2 + (2*index))
-
-        #De_pi
-        De_pi = float(self.twobody[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
-        delta = bounds * np.absolute(De_pi)
-        self.twobody[line_number][2+2-1] = '<<De_pi_'+e1+'_'+e2+'>>'
-        self.params_write.append(['De_pi_'+e1+'_'+e2, str(De_pi-delta), str(De_pi+delta)])
+            #De_pi
+            De_pi = float(self.twobody[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
+            delta = bounds * np.absolute(De_pi)
+            self.twobody[line_number][2+2-1] = '<<De_pi_'+e1+'_'+e2+'>>'
+            self.params_write.append(['De_pi_'+e1+'_'+e2, str(De_pi-delta), str(De_pi+delta)])
 
         #-------------------#
         #--- TRIPLE BOND ---#
         #-------------------#
+        if triple_bond:
+            # De_pipi
+            for index, line in enumerate(self.twobody[2::2]):
+                if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                    break
+            line_number = (2 + (2*index))
 
-        # De_pipi
-        for index, line in enumerate(self.twobody[2::2]):
-            if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
-                break
-        line_number = (2 + (2*index))
+            #De_pipi
+            De_pipi = float(self.twobody[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
+            delta = bounds * np.absolute(De_pipi)
+            self.twobody[line_number][3+2-1] = '<<De_pipi_'+e1+'_'+e2+'>>'
+            self.params_write.append(['De_pipi_'+e1+'_'+e2, str(De_pipi-delta), str(De_pipi+delta)])
 
-        #De_pipi
-        De_pipi = float(self.twobody[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
-        delta = bounds * np.absolute(De_pipi)
-        self.twobody[line_number][3+2-1] = '<<De_pipi_'+e1+'_'+e2+'>>'
-        self.params_write.append(['De_pipi_'+e1+'_'+e2, str(De_pipi-delta), str(De_pipi+delta)])
 
 
 
