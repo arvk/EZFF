@@ -32,6 +32,7 @@ class job:
         self.options = {
             "relax_atoms": False,
             "relax_cell": False,
+            "atomic_charges": False,
             "phonon_dispersion": None,
             "phonon_dispersion_from": None,
             "phonon_dispersion_to": None
@@ -108,6 +109,9 @@ class job:
 
         if opts['phonon_dispersion'] is not None:
             header_line += 'phonon nofrequency '
+
+       if opts['atomic_charges']:
+            header_line += 'qeq '
 
         if header_line == '':
             header_line = 'single '
@@ -326,11 +330,11 @@ def read_atomic_charges(outfilename):
                     atom.element = 'O'
 
                 atom.charge = float(charges[2])
-                
+
                 counter += 1
                 if counter == natoms:
                     break
-            
+
 
     return structure
 
