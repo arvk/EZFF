@@ -5,7 +5,7 @@ import xtal
 import numpy as np
 from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
 from platypus.types import Real, Integer
-from platypus.operators import InjectedPopulation
+from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
 try:
     from platypus.mpipool import MPIPool
 except ImportError:
@@ -220,6 +220,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
         algorithm_for_this_stage = generate_algorithm(algorithm[stage]["myproblem"],
                                                       algorithm[stage]["algorithm_string"],
                                                       algorithm[stage]["population"],
+                                                      algorithm[stage]["mutation_probability"],
                                                       current_solutions,
                                                       algorithm[stage]["pool"])
 
@@ -260,7 +261,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
 
 
 
-def pick_algorithm(myproblem, algorithm, population=1024, current_solution=None, evaluator=None):
+def pick_algorithm(myproblem, algorithm, population, mutation_probability, current_solution, evaluator=None):
     """
     Return a serial or parallel platypus.Algorithm object based on input string
 
@@ -277,51 +278,57 @@ def pick_algorithm(myproblem, algorithm, population=1024, current_solution=None,
     :type evaluator: Platypus.Evaluator
     """
 
+    if mutation_probability is None:
+        variator = GAOperator(SBX(), PM())
+    else:
+        variator = GAOperator(SBX(), PM(probability=mutation_probability))
+        print('Using provided mutation probability')
+
     if algorithm.lower().upper() == 'NSGAII':
         if evaluator is None:
             if current_solution is None:
-                return NSGAII(myproblem, population_size=population)
+                return NSGAII(myproblem, population_size=population, variator=variator)
             else:
-                return NSGAII(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]))
+                return NSGAII(myproblem, population_size=population, variator=variator, generator=InjectedPopulation(current_solution[0:population]))
         else:
             if current_solution is None:
-                return NSGAII(myproblem, population_size=population, evaluator=evaluator)
+                return NSGAII(myproblem, population_size=population, variator=variator, evaluator=evaluator)
             else:
-                return NSGAII(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
+                return NSGAII(myproblem, population_size=population, variator=variator, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
     elif algorithm.lower().upper() == 'NSGAIII':
         num_errors = len(myproblem.directions)
         divisions = int(np.power(population * np.math.factorial(num_errors-1), 1.0/(num_errors-1))) + 2 - num_errors
         divisions = np.maximum(1, divisions)
         if evaluator is None:
             if current_solution is None:
-                return NSGAIII(myproblem, divisions_outer=divisions)
+                return NSGAIII(myproblem, divisions_outer=divisions, variator=variator)
             else:
-                return NSGAIII(myproblem, divisions_outer=divisions, generator=InjectedPopulation(current_solution[0:population]))
+                return NSGAIII(myproblem, divisions_outer=divisions, variator=variator, generator=InjectedPopulation(current_solution[0:population]))
         else:
             if current_solution is None:
-                return NSGAIII(myproblem, divisions_outer=divisions, evaluator=evaluator)
+                return NSGAIII(myproblem, divisions_outer=divisions, variator=variator, evaluator=evaluator)
             else:
-                return NSGAIII(myproblem, divisions_outer=divisions, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
+                return NSGAIII(myproblem, divisions_outer=divisions, variator=variator, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
     elif algorithm.lower().upper() == 'IBEA':
         if evaluator is None:
             if current_solution is None:
-                return IBEA(myproblem, population_size=population)
+                return IBEA(myproblem, population_size=population, variator=variator)
             else:
-                return IBEA(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]))
+                return IBEA(myproblem, population_size=population, variator=variator, generator=InjectedPopulation(current_solution[0:population]))
         else:
             if current_solution is None:
-                return IBEA(myproblem, population_size=population, evaluator=evaluator)
+                return IBEA(myproblem, population_size=population, variator=variator, evaluator=evaluator)
             else:
-                return IBEA(myproblem, population_size=population, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
+                return IBEA(myproblem, population_size=population, variator=variator, generator=InjectedPopulation(current_solution[0:population]), evaluator=evaluator)
     else:
         raise Exception('Please enter an algorithm for optimization. NSGAII , NSGAIII , IBEA are supported')
 
 
 
-def Algorithm(myproblem, algorithm_string, population=1024, pool=None):
-    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "pool": pool}
+def Algorithm(myproblem, algorithm_string, population=1024, mutation_probability=None, pool=None):
+    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "mutation_probability": mutation_probability, "pool": pool}
 
-def generate_algorithm(myproblem, algorithm_string, population=1024, current_solution=None, pool=None):
+def generate_algorithm(myproblem, algorithm_string, population, mutation_probability, current_solution, pool):
     """
     Provide a uniform interface to initialize an algorithm class for serial and parallel execution
 
@@ -338,12 +345,12 @@ def generate_algorithm(myproblem, algorithm_string, population=1024, current_sol
     :type pool: MPIPool or None
     """
     if pool is None:
-        algorithm = pick_algorithm(myproblem, algorithm_string, population=population, current_solution=current_solution)
+        algorithm = pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution)
     else:
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
         else:
             evaluator = PoolEvaluator(pool)
-            algorithm = pick_algorithm(myproblem, algorithm_string, population=population, current_solution=current_solution, evaluator=evaluator)
+            algorithm = pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution, evaluator=evaluator)
     return algorithm
