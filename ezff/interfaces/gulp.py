@@ -110,7 +110,7 @@ class job:
         if opts['phonon_dispersion'] is not None:
             header_line += 'phonon nofrequency '
 
-       if opts['atomic_charges']:
+        if opts['atomic_charges']:
             header_line += 'qeq '
 
         if header_line == '':
