@@ -342,34 +342,38 @@ class reax_forcefield:
         #-------------------#
         #--- DOUBLE BOND ---#
         #-------------------#
-        if double_bond:
-            # De_pi
-            for index, line in enumerate(self.twobody[2::2]):
-                if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
-                    break
-            line_number = (2 + (2*index))
+        # De_pi
+        for index, line in enumerate(self.twobody[2::2]):
+            if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                break
+        line_number = (2 + (2*index))
+        De_pi = float(self.twobody[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
 
-            #De_pi
-            De_pi = float(self.twobody[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
+        if double_bond:
             delta = bounds * np.absolute(De_pi)
             self.twobody[line_number][2+2-1] = '<<De_pi_'+e1+'_'+e2+'>>'
             self.params_write.append(['De_pi_'+e1+'_'+e2, str(De_pi-delta), str(De_pi+delta)])
+        else:
+            if De_pi != 0.0:
+                print('Double bond parameters for ' + e1 + '-' + e2 + ' bond will not be optimized. Current non-zero values in the template forcefield will be retained.')
 
         #-------------------#
         #--- TRIPLE BOND ---#
         #-------------------#
-        if triple_bond:
-            # De_pipi
-            for index, line in enumerate(self.twobody[2::2]):
-                if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
-                    break
-            line_number = (2 + (2*index))
+        # De_pipi
+        for index, line in enumerate(self.twobody[2::2]):
+            if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                break
+        line_number = (2 + (2*index))
+        De_pipi = float(self.twobody[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
 
-            #De_pipi
-            De_pipi = float(self.twobody[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
+        if triple_bond:
             delta = bounds * np.absolute(De_pipi)
             self.twobody[line_number][3+2-1] = '<<De_pipi_'+e1+'_'+e2+'>>'
             self.params_write.append(['De_pipi_'+e1+'_'+e2, str(De_pipi-delta), str(De_pipi+delta)])
+        else:
+            if De_pipi != 0.0:
+                print('Triple bond parameters for ' + e1 + '-' + e2 + ' bond will not be optimized. Current non-zero values in the template forcefield will be retained.')
 
 
 
@@ -582,14 +586,14 @@ class reax_forcefield:
 
     def make_template_qeq(self, e1, bounds=0.1):
         """
-        Function to generate decision variable for Charge Equilibration (QEq) terms 
+        Function to generate decision variable for Charge Equilibration (QEq) terms
 
         : param e1 : Chemical symbol for element 1
         : type e1  : str
 
         : param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
         : type bounds: float
- 
+
         """
         # GET ONE_BODY_PARAMETERS SPECIFIC TO QEQ
         self.template_qeq(e1,bounds)
