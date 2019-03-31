@@ -46,6 +46,16 @@ Features demonstrated in this example
 2. Spawning and using MPI pools for optimization
 3. Non-uniform weighting schemes for calculating phonon dispersion errors
 
+multialgo-sw-parallel
+--------------
+Parallel optimization of a Stillinger-Weber forcefield for the 1T' monolayer system against 6 objectives -- **Two lattice constants** (*a* and *b*), **One elastic modulus** (:math:`C_{11}`) and **Three phonon dispersion curves** (one each for compressed, relaxed and expanded crystals) using a sequence of multiple multi-objective genetic algorithms. Here, the population from the last epoch of optimization with a single algorithm is used as the initial population for the next algorithm in the sequence.
+
+Features demonstrated in this example
+
+1. All features from sw-parallel
+2. Using multiple genetic algorithms in sequence for a single problem
+3. Use of different population sizes and epochs for each algorithm in the sequence
+
 
 rxff-serial
 --------------
