@@ -291,10 +291,11 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
 
 def read_atomic_charges(outfilename):
     """
-    Read atomic charge information from a completed GULP job
+    Read atomic charge information from a completed GULP job file
 
-    : param outfilename : Path of the file containing information about the gulp run
-    : returns: xtal object with optimized charge information
+    :param outfilename: Filename of the GULP output file
+    :type outfilename: str
+    :returns: xtal object with optimized charge information
     """
 
     structure = xtal.AtTraj()

@@ -187,16 +187,16 @@ def read_atomic_structure(structure_file):
 
 def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     """
-    Uniform wrapper function that steps through the optimization process. Also provides uniform handling of output files.
+    The optimize function provides a uniform wrapper to solve the EZFF problem using the algorithm(s) provided.
 
     :param problem: EZFF Problem to be optimized
     :type problem: Problem
 
-    :param algorithm: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
-    :type algorithm: str
+    :param algorithm: EZFF Algorithm(s) to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``, or a list containing any sequence of these options. The algorithms will be used in the sequence provided
+    :type algorithm: str or list (of strings)
 
-    :param iterations: Number of epochs to perform the optimization for
-    :type iterations: int
+    :param iterations: Number of epochs to perform the optimization for. If multiple algorithms are specified, one iteration value should be provided for each algorithm
+    :type iterations: int or list (of ints)
 
     :param write_forcefields: All non-dominated forcefields are written out every ``write_forcefields`` epochs. If this is ``None``, the forcefields are written out for the first and last epoch
     :type write_forcefields: int or None
@@ -326,9 +326,6 @@ def pick_algorithm(myproblem, algorithm, population, mutation_probability, curre
 
 
 def Algorithm(myproblem, algorithm_string, population=1024, mutation_probability=None, pool=None):
-    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "mutation_probability": mutation_probability, "pool": pool}
-
-def generate_algorithm(myproblem, algorithm_string, population, mutation_probability, current_solution, pool):
     """
     Provide a uniform interface to initialize an algorithm class for serial and parallel execution
 
@@ -341,9 +338,15 @@ def generate_algorithm(myproblem, algorithm_string, population, mutation_probabi
     :param population: Population size for genetic algorithms
     :type population: int
 
+    :param mutation_probability: Probability of a decision variable to undergo mutation to a random value within defined bounds
+    :type mutation_probability: float between 0.0 and 1.0
+
     :param pool: MPI pool for parallel execution. If this is None, serial execution is assumed
     :type pool: MPIPool or None
     """
+    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "mutation_probability": mutation_probability, "pool": pool}
+
+def generate_algorithm(myproblem, algorithm_string, population, mutation_probability, current_solution, pool):
     if pool is None:
         algorithm = pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution)
     else:

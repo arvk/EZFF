@@ -27,7 +27,7 @@ copyright = '2019, Aravind Krishnamoorthy'
 author = 'Aravind Krishnamoorthy'
 
 # The short X.Y version
-version = '0.9.1'
+version = '0.9.3'
 # The full version, including alpha/beta/rc tags
 release = '0.9 Beta'
 
@@ -91,7 +91,7 @@ pygments_style = 'colorful'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pyramid'
+html_theme = 'latest'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
