@@ -180,10 +180,14 @@ def read_elastic_moduli(outfilename):
     :type outfilename: str
     :returns: 6x6 Elastic modulus matrix in GPa
     """
-    moduli = np.zeros((6,6))
     outfile = open(outfilename,'r')
-    for oneline in outfile:
+    moduli_array = []
+    while True:
+        oneline = outfile.readline()
+        if not oneline: # break at EOF
+            break
         if 'Elastic Constant Matrix' in oneline:
+            moduli = np.zeros((6,6))
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             dummyline = outfile.readline()
@@ -200,9 +204,9 @@ def read_elastic_moduli(outfilename):
                     else:
                         float_modarray.append(float(element))
                 moduli[i,:] = float_modarray
-            break
+            moduli_array.append(moduli)
     outfile.close()
-    return moduli
+    return moduli_array
 
 
 def read_lattice_constant(outfilename):
