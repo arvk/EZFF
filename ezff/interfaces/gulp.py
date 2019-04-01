@@ -74,39 +74,6 @@ class job:
         os.system('cd '+ self.path + ' ; ' + system_call_command)
 
 
-
-    def read_atomic_structure(self,structure_file):
-        """
-        Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
-
-        :param structure_file: Filename of the atomic structure file
-        :type structure_file: str
-        :returns: xtal trajectory with the structure in the first snapshot
-        """
-        structure = xtal.AtTraj(verbose=False)
-
-        if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
-            structure.read_snapshot_vasp(structure_file)
-
-        return structure
-
-
-    def read_energy(self):
-        return read_energy(self.outfile)
-
-    def read_elastic_moduli(self):
-        return read_elastic_moduli(self.outfile)
-
-    def read_lattice_constant(self):
-        return read_lattice_constant(self.outfile)
-
-    def read_phonon_dispersion(self, units='cm-1'):
-        return read_phonon_dispersion(self.outfile+'.disp', units=units)
-
-    def error_structure_distortion(self):
-        return ezff.error_structure_distortion(self.outfile, relax_atoms=self.options['relax_atoms'], relax_cell=self.options['relax_cell'])
-
-
     def write_script_file(self):
         """
         Write-out a complete GULP script file, ``job.scriptfile``, based on job parameters
@@ -186,6 +153,24 @@ class job:
                 os.remove(self.path+'/'+file)
 
 
+    ## OOP methods for reading output from GULP
+    def read_energy(self):
+        return read_energy(self.outfile)
+
+    def read_elastic_moduli(self):
+        return read_elastic_moduli(self.outfile)
+
+    def read_lattice_constant(self):
+        return read_lattice_constant(self.outfile)
+
+    def read_phonon_dispersion(self, units='cm-1'):
+        return read_phonon_dispersion(self.outfile+'.disp', units=units)
+
+    def error_structure_distortion(self):
+        return ezff.error_structure_distortion(self.outfile, relax_atoms=self.options['relax_atoms'], relax_cell=self.options['relax_cell'])
+
+
+
 
 def read_elastic_moduli(outfilename):
     """
@@ -230,9 +215,14 @@ def read_lattice_constant(outfilename):
     """
     abc, ang = np.zeros(3), np.zeros(3)
     err_abc, err_ang = np.zeros(3), np.zeros(3)
+    lattice_array = []
     outfile = open(outfilename, 'r')
-    for oneline in outfile:
+    while True:
+        oneline = outfile.readline()
+        if not oneline:  # EOF check
+            break
         if 'Comparison of initial and final' in oneline:
+            lattice = {}
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             dummyline = outfile.readline()
@@ -252,11 +242,14 @@ def read_lattice_constant(outfilename):
                 elif data[0] == 'gamma':
                     ang[2], err_ang[2] = data[2], data[-1]
                 elif data[0][0] == '-':
+                    lattice = {'abc': abc, 'ang': ang, 'err_abc': err_abc, 'err_ang': err_ang}
+                    lattice_array.append(lattice)
                     break
-            break
     outfile.close()
-    lattice = {'abc': abc, 'ang': ang, 'err_abc': err_abc, 'err_ang': err_ang}
-    return lattice
+
+    return lattice_array
+
+
 
 def read_energy(outfilename):
     """
@@ -266,13 +259,16 @@ def read_energy(outfilename):
     :type outfilename: str
     :returns: Energy of the structure in eV
     """
+    energy_in_eV = []
     outfile = open(outfilename, 'r')
     for line in outfile:
         if 'Total lattice energy' in line:
             if line.strip().split()[-1] == 'eV':
-                energy_in_eV = float(line.strip().split()[-2])
+                energy_in_eV.append(float(line.strip().split()[-2]))
     return energy_in_eV
     outfile.close()
+
+
 
 def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     """
@@ -297,6 +293,8 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     pbs = np.array(pbs).reshape((100,num_bands)).T
     pbs *= convert.frequency[units]['THz']
     return pbs
+
+
 
 def read_atomic_charges(outfilename):
     """
