@@ -308,42 +308,24 @@ def read_atomic_charges(outfilename):
     :type outfilename: str
     :returns: xtal object with optimized charge information
     """
-
     structure = xtal.AtTraj()
-    snapshot = structure.create_snapshot(xtal.Snapshot)
     outfile = open(outfilename, 'r')
 
-    natoms = None
-
-    for line in outfile:
-
-        if 'Total number atoms/shells' in line:
-            natoms = int(line.strip().split()[-1])
-
-        if 'Final charges from QEq' in line:
-            snapshot.atomlist = []
+    while True:
+        oneline = outfile.readline()
+        if not oneline:  # EOF check
+            break
+        if 'Final charges from QEq' in oneline:
+            snapshot = structure.create_snapshot(xtal.Snapshot)
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             dummyline = outfile.readline()
-            # Atomic Charge information starts here
-            counter = 0
             while True:
-                charges = outfile.readline()
-                charges = charges.strip().split()
-                atom = snapshot.create_atom(xtal.Atom)
-                if float(charges[1]) == 1:
-                    atom.element = 'H'
-                if float(charges[1]) == 6:
-                    atom.element = 'C'
-                if float(charges[1]) == 7:
-                    atom.element = 'N'
-                if float(charges[1]) == 8:
-                    atom.element = 'O'
-
-                atom.charge = float(charges[2])
-
-                counter += 1
-                if counter == natoms:
+                charges = outfile.readline().strip().split()
+                if charges[0][0] == '-':
                     break
+                else:
+                    atom = snapshot.create_atom(xtal.Atom)
+                    atom.charge = float(charges[-1])
     return structure
