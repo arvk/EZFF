@@ -1,6 +1,7 @@
 """This module provide methods to handle reading and writing forcefields"""
 import numpy as np
 import time
+from ezff.utils.reaxff import reax_forcefield
 
 def read_variable_bounds(filename, verbose=False):
     """Read permissible lower and upper bounds for decision variables used in forcefields optimization
@@ -52,31 +53,29 @@ def read_forcefield_template(template_filename):
 
 
 
-def write_forcefield_file(filename, template_string, parameters, verbose=False):
+def generate_forcefield(template_string, parameters, FFtype = None, outfile = None):
     """Generate a new forcefield from the template by replacing variables with numerical values
-
-    :param filename: Name of the forcefield file to be written
-    :type filename: str
 
     :param template_string: Text of the forcefield template
     :type template_string: str
 
     :param parameters: Numerical value of all decision variables in the form of variable:value pairs
     :type parameters: dict
-
-    :param verbose: Print one line confirming forcefield write-out
-    :type verbose: bool
     """
     replaced_keys = ''
     for key, ranges in parameters.items():
         pattern = '<<' + key + '>>'
         while pattern in template_string:
             template_string = template_string.replace(pattern, '%12.6f' % ranges)
-            if verbose:
-                replaced_keys += key + ', '
 
-    with open(filename, 'w') as new_forcefield:
-        new_forcefield.write(template_string)
+    # Special handling for certain forcefield types
+    if FFtype is not None:
+        if (FFtype.strip().upper() == 'REAX') or (FFtype.strip().upper() == 'REAXFF'):
+            template_string = reax_forcefield(filestring=template_string).write_gulp_library()
 
-    if verbose:
-        print('Forcefield, ' + filename + ', generated with new values for ' + replaced_keys[:-2])
+    if outfile is not None:
+        with open(outfile, 'w') as new_forcefield:
+            new_forcefield.write(template_string)
+        return
+    else:
+        return template_string

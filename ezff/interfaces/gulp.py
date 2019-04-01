@@ -2,7 +2,10 @@
 import os
 import xtal
 import numpy as np
+import ezff
 from ezff.utils import convert_units as convert
+import distutils
+from distutils import spawn
 
 class job:
     """
@@ -22,16 +25,15 @@ class job:
                 print('Path for current job is not valid . Creating a new directory...')
             os.makedirs(path)
         self.path = path
-        self.scriptfile ='in.gulp'
-        self.outfile = 'out.gulp'
-        self.command = 'gulp'
-        self.forcefield = ''
-        self.temporary_forcefield = False
+
+        self.scriptfile = os.path.join(os.path.abspath(path), 'in.gulp')
+        self.outfile = os.path.join(os.path.abspath(path), 'out.gulp')
         self.structure = None
-        self.pbc = False
+        self.forcefield = ''
         self.options = {
             "relax_atoms": False,
             "relax_cell": False,
+            "pbc": False,
             "atomic_charges": False,
             "phonon_dispersion": None,
             "phonon_dispersion_from": None,
@@ -41,27 +43,26 @@ class job:
         if verbose:
             print('Created a new GULP job')
 
-    def run(self, command = None, parallel = False, processors = 1, timeout = None):
+    def run(self, command = None, timeout = None):
         """
         Execute GULP job with user-defined parameters
 
         :param command: path to GULP executable
         :type command: str
 
-        :param parallel: Flag for parallel execution
-        :type parallel: bool
-
-        :param processors: Number of processors for parallel execution of each GULP job
-        :type processors: int
-
         :param timeout: GULP job is automatically killed after ``timeout`` seconds
         :type timeout: int
         """
         if command is None:
-            command = self.command
+            # Attempt to locate a `gulp` executable
+            gulpexec = distutils.spawn.find_executable('gulp')
+            if gulpexec is not None:
+                print('Located GULP executable at ' + gulpexec)
+                command = gulpexec
+            else:
+                print('No GULP executable specified or located')
 
-        if parallel:
-            command = "mpirun -np " + str(processors) + " " + command
+        self.write_script_file()
 
         system_call_command = command + ' < ' + self.scriptfile + ' > ' + self.outfile + ' 2> ' + self.outfile + '.runerror'
 
@@ -71,6 +72,7 @@ class job:
         if self.verbose:
             print('cd '+ self.path + ' ; ' + system_call_command)
         os.system('cd '+ self.path + ' ; ' + system_call_command)
+
 
 
     def read_atomic_structure(self,structure_file):
@@ -89,15 +91,20 @@ class job:
         return structure
 
 
-    def write_script_file(self, convert_reaxff=None):
+    def read_energy(self):
+        return read_energy(self.outfile)
+
+
+    def error_structure_distortion(self):
+        return ezff.error_structure_distortion(self.outfile, relax_atoms=self.options['relax_atoms'], relax_cell=self.options['relax_cell'])
+
+
+    def write_script_file(self):
         """
         Write-out a complete GULP script file, ``job.scriptfile``, based on job parameters
-
-        :param convert_reaxff: Optional function that manipulates ``job.forcefield`` before the script file is written
-        :type convert_reaxff: bool
         """
         opts = self.options
-        script = open(self.path+'/'+self.scriptfile,'w')
+        script = open(self.scriptfile,'w')
         header_line = ''
         if opts['relax_atoms']:
             header_line += 'optimise '
@@ -120,8 +127,15 @@ class job:
         script.write(header_line + '\n')
 
         script.write('\n')
+        script.write('\n')
 
-        if self.pbc:
+        # Write forcefield into script
+        script.write(self.forcefield)
+
+        script.write('\n')
+        script.write('\n')
+
+        if opts['pbc']:
             script.write('vectors\n')
             script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
             script.write('Fractional\n')
@@ -139,16 +153,6 @@ class job:
                 script.write(positions)
         script.write('\n')
 
-
-        if convert_reaxff is None:
-            with open(self.forcefield,'r') as forcefield_file:
-                forcefield = forcefield_file.read()
-            for line in forcefield.split('\n'):
-                script.write(' '.join(line.split()) + '\n')
-        else:
-            self.forcefield = convert_reaxff(self.forcefield)
-            script.write('library ' + os.path.basename(self.forcefield))
-        script.write('\n')
 
         if opts['phonon_dispersion_from'] is not None:
             if opts['phonon_dispersion_to'] is not None:
@@ -172,9 +176,6 @@ class job:
                 os.remove(file)
             elif os.path.isfile(self.path+'/'+file):
                 os.remove(self.path+'/'+file)
-        if self.temporary_forcefield:
-            if os.path.isfile(self.forcefield):
-                os.remove(self.forcefield)
 
 
 
@@ -335,170 +336,4 @@ def read_atomic_charges(outfilename):
                 counter += 1
                 if counter == natoms:
                     break
-
-
     return structure
-
-def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False):
-    if not relax_atoms:  # If atoms are not relaxed (i.e. single point calculation, then return 0.0)
-        return 0.0       # In the future, add a info/warning message in the log
-
-    if relax_atoms:      # If atoms are leaxed, then create 2 atomic trajectories, one for each of the initial and relaxed structures
-        initial = xtal.AtTraj()
-        initial.abc = np.array([0.0,0.0,0.0])
-        initial.ang = np.array([0.0,0.0,0.0])
-        initial_snapshot = initial.create_snapshot(xtal.Snapshot)
-        relaxed = xtal.AtTraj()
-        relaxed.abc = np.array([0.0,0.0,0.0])
-        relaxed.ang = np.array([0.0,0.0,0.0])
-        relaxed_snapshot = relaxed.create_snapshot(xtal.Snapshot)
-
-        # Read number of atoms
-        outfile = open(outfilename, 'r')
-        for line in outfile:
-            if 'Number of irreducible atoms/shells' in line.strip():
-                num_atoms = int(line.strip().split()[-1])
-        outfile.close()
-
-        for atomID in range(num_atoms):
-            initial_snapshot.create_atom(xtal.Atom)
-            initial_snapshot.atomlist[atomID].cart = np.array([0.0,0.0,0.0])
-            initial_snapshot.atomlist[atomID].fract = np.array([0.0,0.0,0.0])
-            relaxed_snapshot.create_atom(xtal.Atom)
-            relaxed_snapshot.atomlist[atomID].cart = np.array([0.0,0.0,0.0])
-            relaxed_snapshot.atomlist[atomID].fract = np.array([0.0,0.0,0.0])
-
-        if relax_cell:     # In atoms are relaxed, and simulation cell is also relaxed
-            convert_to_cart = True # We have to read in 2 box sizes, one for the initial cell and one for the relaxed cell
-            outfile = open(outfilename, 'r')
-            for oneline in outfile:
-                if 'Comparison of initial and final' in oneline:
-                    dummyline = outfile.readline()
-                    dummyline = outfile.readline()
-                    dummyline = outfile.readline()
-                    dummyline = outfile.readline()
-                    while True:
-                        data = outfile.readline().strip().split()
-                        if data[0].isdigit():
-                            atomID = int(data[0])-1
-                            if data[1] == 'x':
-                                axisID = 0
-                            elif data[1] == 'y':
-                                axisID = 1
-                            else:
-                                axisID = 2
-
-                            if data[5] == 'Cartesian':
-                                initial_snapshot.atomlist[atomID].cart[axisID] = float(data[2])
-                                relaxed_snapshot.atomlist[atomID].cart[axisID] = float(data[3])
-                                convert_to_cart = False
-                            elif data[5] == 'Fractional':
-                                initial_snapshot.atomlist[atomID].fract[axisID] = float(data[2])
-                                relaxed_snapshot.atomlist[atomID].fract[axisID] = float(data[3])
-                        elif data[0][0] == '-':
-                            break
-                    break
-            outfile.close()
-
-            if convert_to_cart: # READ TWO CELL SIZES - ONE FOR THE INITIAL CELL, ONE FOR THE RELAXED CELL
-                outfile = open(outfilename, 'r')
-                for oneline in outfile:
-                    if 'Comparison of initial and final' in oneline:
-                        dummyline = outfile.readline()
-                        dummyline = outfile.readline()
-                        dummyline = outfile.readline()
-                        dummyline = outfile.readline()
-                        while True:
-                            data = outfile.readline().strip().split()
-                            if data[0] == 'a':
-                                initial.abc[0], relaxed.abc[0] = float(data[1]), float(data[2])
-                            elif data[0] == 'b':
-                                initial.abc[1], relaxed.abc[1] = float(data[1]), float(data[2])
-                            elif data[0] == 'c':
-                                initial.abc[2], relaxed.abc[2] = float(data[1]), float(data[2])
-                            elif data[0] == 'alpha':
-                                initial.ang[0], relaxed.ang[0] = float(data[1]), float(data[2])
-                            elif data[0] == 'beta':
-                                initial.ang[1], relaxed.ang[1] = float(data[1]), float(data[2])
-                            elif data[0] == 'gamma':
-                                initial.ang[2], relaxed.ang[2] = float(data[1]), float(data[2])
-                            elif data[0][0] == '-':
-                                break
-                        break
-                outfile.close()
-                initial.abc_to_box()
-                relaxed.abc_to_box()
-                initial.make_dircar_matrices()
-                relaxed.make_dircar_matrices()
-                initial.dirtocar()
-                relaxed.dirtocar()
-                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
-                error = 0.0
-                for i in range(len(initial.snaplist[0].atomlist)):
-                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
-                    error += np.inner(dr, dr)
-            else:
-                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
-                error = 0.0
-                for i in range(len(initial.snaplist[0].atomlist)):
-                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
-                    error += np.inner(dr, dr)
-            return error
-
-        else:     # IF THE CELL IS NOT RELAXED. JUST THE ATOMS ARE RELAXED
-            convert_to_cart = True
-            outfile = open(outfilename, 'r')
-            for oneline in outfile:
-                if 'Comparison of initial and final' in oneline:
-                    dummyline = outfile.readline()
-                    dummyline = outfile.readline()
-                    dummyline = outfile.readline()
-                    dummyline = outfile.readline()
-                    while True:
-                        data = outfile.readline().strip().split()
-                        if data[0].isdigit():
-                            atomID = int(data[0])-1
-                            if data[1] == 'x':
-                                axisID = 0
-                            elif data[1] == 'y':
-                                axisID = 1
-                            else:
-                                axisID = 2
-
-                            if data[5] == 'Cartesian':
-                                initial_snapshot.atomlist[atomID].cart[axisID] = float(data[2])
-                                relaxed_snapshot.atomlist[atomID].cart[axisID] = float(data[3])
-                                convert_to_cart = False
-                            elif data[5] == 'Fractional':
-                                initial_snapshot.atomlist[atomID].fract[axisID] = float(data[2])
-                                relaxed_snapshot.atomlist[atomID].fract[axisID] = float(data[3])
-                        elif data[0][0] == '-':
-                            break
-                    break
-            outfile.close()
-
-            if convert_to_cart:
-                outfile = open(outfilename, 'r')   ### READ A SINGLE BOX SIZE FOR THE INITIAL AND RELAXED STRUCTURES
-                for oneline in outfile:
-                    if 'Cartesian lattice vectors (Angstroms)' in oneline:
-                        dummyline = outfile.readline()
-                        for i in range(3):
-                            initial.box[i][0:3] = list(map(float,outfile.readline().strip().split()))
-                outfile.close()
-                relaxed.box = initial.box
-                initial.make_dircar_matrices()
-                relaxed.make_dircar_matrices()
-                initial.dirtocar()
-                relaxed.dirtocar()
-                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
-                error = 0.0
-                for i in range(len(initial.snaplist[0].atomlist)):
-                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
-                    error += np.inner(dr, dr)
-            else:
-                relaxed.move(initial.snaplist[0].atomlist[0].cart  - relaxed.snaplist[0].atomlist[0].cart)
-                error = 0.0
-                for i in range(len(initial.snaplist[0].atomlist)):
-                    dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
-                    error += np.inner(dr, dr)
-            return error

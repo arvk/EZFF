@@ -10,7 +10,8 @@ try:
     from platypus.mpipool import MPIPool
 except ImportError:
     pass
-from .ffio import write_forcefield_file
+from .ffio import generate_forcefield
+from .errors import *
 
 __version__ = '0.9.3' # Update setup.py if version changes
 
@@ -65,108 +66,6 @@ class Pool(MPIPool):
     """
     def __init__(self, comm=None, debug=False, loadbalance=False):
         super(Pool, self).__init__(comm=comm, debug=debug, loadbalance=loadbalance)
-
-
-def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
-    """
-    Calculate error between MD-computed phonon dispersion and the ground-truth phonon dispersion with user-defined weighting schemes
-
-    :param md_disp: MD-computed phonon dispersion curve
-    :type md_disp: 2D np.array
-
-    :param gt_disp: Ground-truth phonon dispersion curve
-    :type gt_disp: 2D np.array
-
-    :param weights: User-defined weighting scheme for calculating errors provided as a list of numbers, one per band. Possible values are
-                    ``uniform`` - where errors from all bands are equally weighted,
-                    ``acoustic`` - where errors from lower-frequency bands are assigned greater weights, and
-                    `list` - 1-D list of length equal to number of bands
-    :type weights: str `or` list
-
-    :param verbose: Deprecated option for verbosity of error calculation routine
-    :type verbose: bool
-    """
-    # Perform sanity check. Number of bands should be equal between the two structures
-    if not len(md_disp) == len(gt_disp):
-        raise ValueError("MD and ground truth dispersions have different number of bands")
-        return
-
-    # Create array of weights - one value per band
-    num_band = len(md_disp)
-    if weights == 'uniform':
-        W = np.ones(num_band)
-    elif weights == 'acoustic':
-        maxfreq = np.amax(gt_disp)
-        W = np.reciprocal((np.mean(gt_disp, axis=1)/maxfreq) + 0.1)
-    elif isinstance(weights,list) or isinstance(weights,np.ndarray):
-        if len(weights) == num_band:
-            W = np.array(weights)
-        else:
-            raise ValueError("Number of provided weight values is different from number of bands! Aborting")
-
-    # Compute the RMS error between dispersions
-    rms_error = 0.0
-    num_k_gt = len(gt_disp[0])
-    scaling = num_k_gt/100.0
-    for band_index in range(0, len(gt_disp)):
-        interp_md_band = np.interp(np.arange(0, num_k_gt), np.arange(0, 100)*scaling, md_disp[band_index])
-        rms_error += np.linalg.norm(interp_md_band - gt_disp[band_index]) * W[band_index]
-
-    rms_error /= (num_k_gt * num_band)
-    return rms_error
-
-
-
-def error_PES_scan(md_scan, gt_scan, weights='uniform', verbose=False):
-    """
-    Calculate error between MD-computed potential energy surface and the ground-truth potential energy surface with user-defined weighting schemes
-
-    :param md_disp: MD-computed potential energy surface
-    :type md_disp: 1D np.array
-
-    :param gt_disp: Ground-truth potential energy surface
-    :type gt_disp: 1D np.array
-
-    :param weights: User-defined weighting scheme for calculating errors. Possible values are
-                    ``uniform`` - where errors from all points on the PES are weighted equally,
-                    ``minima`` - where errors from lower-energy points are assigned greater weights,
-                    ``dissociation`` - where errors from highest-energy points are assigned greater weights, and
-                    `list` - 1-D list of length equal to number of points on the PES scans
-    :type weights: str `or` list
-
-    :param verbose: Deprecated option for verbosity of error calculation routine
-    :type verbose: bool
-    """
-    # Perform sanity check. Number of bands should be equal between the two structures
-    if not len(md_scan) == len(gt_scan):
-        raise ValueError("MD and ground truth PES have different number of points! Aborting")
-        return
-
-    md_scan = np.array(md_scan)
-    gt_scan = np.array(gt_scan)
-
-    num_pes = len(gt_scan)
-    W = np.ones(num_pes)
-    if weights == 'uniform':
-        pass
-    elif weights == 'minima':
-        min_E = np.amin(gt_scan)
-        max_E = np.amax(gt_scan)
-        W = np.reciprocal(((gt_scan-min_E)/max_E) + 0.1)
-    elif weights == 'dissociation':
-        min_E = np.amin(gt_scan)
-        max_E = np.amax(gt_scan)
-        W = (9.0*(gt_scan-min_E)/max_E) + 1.0
-    elif isinstance(weights,list) or isinstance(weights,np.ndarray):
-        if len(weights) == len(gt_scan):
-            W = np.array(weights)
-        else:
-            raise ValueError("Weights array and PES have different number of points! Aborting")
-
-    # Compute the RMS error between PES
-    rms_error = np.linalg.norm((md_scan - gt_scan) * W)
-    return rms_error
-
 
 
 
@@ -255,7 +154,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
                 for sol_index, solution in enumerate(unique(nondominated(algorithm_for_this_stage.result))):
                     ff_name = outdir + '/forcefields/FF_' + str(sol_index)
                     parameters_dict = dict(zip(problem.variables, solution.variables))
-                    write_forcefield_file(ff_name, problem.template, parameters_dict, verbose=False)
+                    generate_forcefield(problem.template, parameters_dict, outfile=ff_name)
 
             current_solutions = algorithm_for_this_stage.population
 
