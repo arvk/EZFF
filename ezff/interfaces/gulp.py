@@ -111,21 +111,25 @@ class job:
         script.write('\n')
 
         if opts['pbc']:
-            script.write('vectors\n')
-            script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
-            script.write('Fractional\n')
-            for atom in self.structure.snaplist[0].atomlist:
-                positions = atom.element.title() + ' core '
-                positions += np.array_str(atom.fract).replace('[','').replace(']','')
-                positions += ' 0.0   1.0   0.0   1 1 1 \n'
-                script.write(positions)
+            for snapshot in self.structure.snaplist:
+                script.write('vectors\n')
+                script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
+                script.write('Fractional\n')
+                for atom in snapshot.atomlist:
+                    positions = atom.element.title() + ' core '
+                    positions += np.array_str(atom.fract).replace('[','').replace(']','')
+                    positions += ' 0.0   1.0   0.0   1 1 1 \n'
+                    script.write(positions)
+                script.write('\n\n\n')
         else:
-            script.write('Cartesian\n')
-            for atom in self.structure.snaplist[0].atomlist:
-                positions = atom.element.title() + ' core '
-                positions += np.array_str(atom.cart).replace('[','').replace(']','')
-                positions += ' 0.0   1.0   0.0   1 1 1 \n'
-                script.write(positions)
+            for snapshot in self.structure.snaplist:
+                script.write('Cartesian\n')
+                for atom in snapshot.atomlist:
+                    positions = atom.element.title() + ' core '
+                    positions += np.array_str(atom.cart).replace('[','').replace(']','')
+                    positions += ' 0.0   1.0   0.0   1 1 1 \n'
+                    script.write(positions)
+                script.write('\n\n\n')
         script.write('\n')
 
 
@@ -169,7 +173,8 @@ class job:
     def error_structure_distortion(self):
         return ezff.error_structure_distortion(self.outfile, relax_atoms=self.options['relax_atoms'], relax_cell=self.options['relax_cell'])
 
-
+    def read_atomic_charges(self):
+        return read_atomic_charges(self.outfile)
 
 
 def read_elastic_moduli(outfilename):
@@ -269,8 +274,8 @@ def read_energy(outfilename):
         if 'Total lattice energy' in line:
             if line.strip().split()[-1] == 'eV':
                 energy_in_eV.append(float(line.strip().split()[-2]))
-    return energy_in_eV
     outfile.close()
+    return np.array(energy_in_eV)
 
 
 
@@ -315,8 +320,10 @@ def read_atomic_charges(outfilename):
         oneline = outfile.readline()
         if not oneline:  # EOF check
             break
-        if 'Final charges from QEq' in oneline:
+        if 'Output for configuration' in oneline:
             snapshot = structure.create_snapshot(xtal.Snapshot)
+        if 'Final charges from QEq' in oneline:
+            snapshot.atomlist = []
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             dummyline = outfile.readline()
