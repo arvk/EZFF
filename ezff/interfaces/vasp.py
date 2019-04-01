@@ -1,6 +1,22 @@
 """Interface to VASP, the Vienna Ab initio Simulation Package"""
 import numpy as np
 
+def read_atomic_structure(self,structure_file):
+    """
+    Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
+
+    :param structure_file: Filename of the atomic structure file
+    :type structure_file: str
+    :returns: xtal trajectory with the structure in the first snapshot
+    """
+    structure = xtal.AtTraj(verbose=False)
+
+    if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
+        structure.read_snapshot_vasp(structure_file)
+
+    return structure
+
+
 def read_phonon_dispersion(phonon_dispersion_file):
     """
     Read-in ground-truth phonon dispersion curve from VASP+Phonopy
