@@ -72,7 +72,7 @@ def read_energy(outfilename):
                 energy_in_Hartrees = float(line.strip().split()[-1])
                 energies.append(energy_in_Hartrees * convert.energy['Ha']['eV'])
         outfile.close()
-    return energies
+    return np.array(energies)
 
 
 
