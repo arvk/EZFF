@@ -94,6 +94,14 @@ class job:
     def read_energy(self):
         return read_energy(self.outfile)
 
+    def read_elastic_moduli(self):
+        return read_elastic_moduli(self.outfile)
+
+    def read_lattice_constant(self):
+        return read_lattice_constant(self.outfile)
+
+    def read_phonon_dispersion(self, units='cm-1'):
+        return read_phonon_dispersion(self.outfile+'.disp', units=units)
 
     def error_structure_distortion(self):
         return ezff.error_structure_distortion(self.outfile, relax_atoms=self.options['relax_atoms'], relax_cell=self.options['relax_cell'])
@@ -158,7 +166,7 @@ class job:
             if opts['phonon_dispersion_to'] is not None:
                 script.write('dispersion 1 100 \n')
                 script.write(opts['phonon_dispersion_from'] + ' to ' + opts['phonon_dispersion_to']+'\n')
-                script.write('output phonon ' + self.outfile)
+                script.write('output phonon ' + os.path.basename(self.outfile + '.disp'))
                 script.write('\n')
 
         script.write('\n')
