@@ -272,3 +272,74 @@ def error_structure_distortion(outfilename, relax_atoms=False, relax_cell=False)
                     dr = initial.snaplist[0].atomlist[i].cart - relaxed.snaplist[0].atomlist[i].cart
                     error += np.inner(dr, dr)
             return error
+
+
+def error_atomic_charges(MD=None, GT=None):
+    # Sanity checks -- Both inputs should be AtTraj objects
+    if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
+        print('ERROR_ATOMIC_CHARGES: Please provide xtal.AtTraj objects for comparison')
+        return
+
+    if not (len(GT.snaplist) == len(MD.snaplist)):
+        print('Different number of structures in MD and Ground-Truth data')
+
+    error_array = []
+    for snapID in range(len(GT.snaplist)):
+        GT_charges = np.array([atom.charge for atom in GT.snaplist[snapID].atomlist])
+        MD_charges = np.array([atom.charge for atom in MD.snaplist[snapID].atomlist])
+        error_this_snapshot = np.linalg.norm(GT_charges - MD_charges)
+        error_array.append(error_this_snapshot)
+
+    return np.sum(error_array)
+
+
+
+def error_energy(MD, GT, weights='uniform', verbose=False):
+    """
+    Calculate error between MD-computed potential energy surface and the ground-truth potential energy surface with user-defined weighting schemes
+
+    :param md_disp: MD-computed potential energy surface
+    :type md_disp: 1D np.array
+
+    :param gt_disp: Ground-truth potential energy surface
+    :type gt_disp: 1D np.array
+
+    :param weights: User-defined weighting scheme for calculating errors. Possible values are
+                    ``uniform`` - where errors from all points on the PES are weighted equally,
+                    ``minima`` - where errors from lower-energy points are assigned greater weights,
+                    ``dissociation`` - where errors from highest-energy points are assigned greater weights, and
+                    `list` - 1-D list of length equal to number of points on the PES scans
+    :type weights: str `or` list
+
+    :param verbose: Deprecated option for verbosity of error calculation routine
+    :type verbose: bool
+    """
+    # Perform sanity check. Number of bands should be equal between the two structures
+    if not len(MD) == len(GT):
+        raise ValueError("MD and ground truth PES have different number of points! Aborting")
+        return
+
+    MD = np.array(MD)
+    GT = np.array(GT)
+
+    num_pes = len(GT)
+    W = np.ones(num_pes)
+    if weights == 'uniform':
+        pass
+    elif weights == 'minima':
+        min_E = np.amin(GT)
+        max_E = np.amax(GT)
+        W = np.reciprocal(((GT-min_E)/max_E) + 0.1)
+    elif weights == 'dissociation':
+        min_E = np.amin(GT)
+        max_E = np.amax(GT)
+        W = (9.0*(GT-min_E)/max_E) + 1.0
+    elif isinstance(weights,list) or isinstance(weights,np.ndarray):
+        if len(weights) == len(GT):
+            W = np.array(weights)
+        else:
+            raise ValueError("Weights array and PES have different number of points! Aborting")
+
+    # Compute the RMS error between PES
+    rms_error = np.linalg.norm((MD - GT) * W)
+    return rms_error
