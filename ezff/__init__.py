@@ -68,22 +68,6 @@ class Pool(MPIPool):
         super(Pool, self).__init__(comm=comm, debug=debug, loadbalance=loadbalance)
 
 
-
-def read_atomic_structure(structure_file):
-    """
-    Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
-
-    :param structure_file: Filename of the atomic structure file
-    :type structure_file: str
-    """
-    structure = xtal.AtTraj(verbose=False)
-
-    if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
-        structure.read_snapshot_vasp(structure_file)
-
-    return structure
-
-
 def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     """
     The optimize function provides a uniform wrapper to solve the EZFF problem using the algorithm(s) provided.
