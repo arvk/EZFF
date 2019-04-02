@@ -7,11 +7,12 @@ from ezff.utils import convert_units as convert
 import distutils
 from distutils import spawn
 
+
+
 class job:
     """
     Class representing a GULP calculation
     """
-
     def __init__(self, verbose=False, path='.'):
         """
         :param path: Path where the GULP job must be run from
@@ -43,6 +44,8 @@ class job:
         if verbose:
             print('Created a new GULP job')
 
+
+
     def run(self, command = None, timeout = None):
         """
         Execute GULP job with user-defined parameters
@@ -62,7 +65,7 @@ class job:
             else:
                 print('No GULP executable specified or located')
 
-        self.write_script_file()
+        self._write_script_file()
 
         system_call_command = command + ' < ' + self.scriptfile + ' > ' + self.outfile + ' 2> ' + self.outfile + '.runerror'
 
@@ -74,7 +77,8 @@ class job:
         os.system('cd '+ self.path + ' ; ' + system_call_command)
 
 
-    def write_script_file(self):
+
+    def _write_script_file(self):
         """
         Write-out a complete GULP script file, ``job.scriptfile``, based on job parameters
         """
@@ -145,6 +149,7 @@ class job:
         script.close()
 
 
+
     def cleanup(self):
         """
         Clean-up after the completion of a GULP job. Deletes input, output and forcefields files
@@ -157,30 +162,51 @@ class job:
                 os.remove(self.path+'/'+file)
 
 
+
     ## OOP methods for reading output from GULP
     def read_energy(self):
-        return read_energy(self.outfile)
+        """
+        Read energy from completed GULP job
+
+        :returns: Energy of the input structure(s) in eV as a np.ndarray
+        """
+        return _read_energy(self.outfile)
 
     def read_elastic_moduli(self):
-        return read_elastic_moduli(self.outfile)
+        """
+        Read elastic modulus matrix from a completed GULP job
 
-    def read_lattice_constant(self):
-        return read_lattice_constant(self.outfile)
+        :returns: 6x6 Elastic modulus matrix in GPa for each input structure, as a list
+        """
+        return _read_elastic_moduli(self.outfile)
 
     def read_phonon_dispersion(self, units='cm-1'):
-        return read_phonon_dispersion(self.outfile+'.disp', units=units)
+        """
+        Read phonon dispersion from a complete GULP job
 
-    def error_structure_distortion(self):
-        return ezff.error_structure_distortion(self.outfile, relax_atoms=self.options['relax_atoms'], relax_cell=self.options['relax_cell'])
+        :returns: 2D np.array containing the phonon dispersion in THz
+        """
+        return _read_phonon_dispersion(self.outfile+'.disp', units=units)
 
     def read_atomic_charges(self):
-        return read_atomic_charges(self.outfile)
+        """
+        Read atomic charge information from a completed GULP job file
+
+        :returns: xtal.AtTraj object with optimized charge information
+        """
+        return _read_atomic_charges(self.outfile)
 
     def read_structure(self):
-        return read_structure(self.outfile, relax_cell=self.options['relax_cell'], initial_box=self.structure.box)
+        """
+        Read converged structure (cell and atomic positions) from the MD job
+
+        :returns: xtal.AtTraj object with (optimized) individual structures as separate snapshots
+        """
+        return _read_structure(self.outfile, relax_cell=self.options['relax_cell'], initial_box=self.structure.box)
 
 
-def read_elastic_moduli(outfilename):
+
+def _read_elastic_moduli(outfilename):
     """
     Read elastic modulus matrix from a completed GULP job
 
@@ -217,53 +243,8 @@ def read_elastic_moduli(outfilename):
     return moduli_array
 
 
-def read_lattice_constant(outfilename):
-    """
-    Read lattice constant values from a completed GULP job
 
-    :param outfilename: Path of the stdout from the GULP job
-    :type outfilename: str
-    :returns: Dictionary with ``abc`` - 3 lattice constants, ``ang`` - 3 supercell angles, ``err_abc`` - error in lattice constant, ``err_ang`` - error in supercell angles
-    """
-    abc, ang = np.zeros(3), np.zeros(3)
-    err_abc, err_ang = np.zeros(3), np.zeros(3)
-    lattice_array = []
-    outfile = open(outfilename, 'r')
-    while True:
-        oneline = outfile.readline()
-        if not oneline:  # EOF check
-            break
-        if 'Comparison of initial and final' in oneline:
-            lattice = {}
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            while True:
-                data = outfile.readline().strip().split()
-                if data[0] == 'a':
-                    abc[0], err_abc[0] = data[2], data[-1]
-                elif data[0] == 'b':
-                    abc[1], err_abc[1] = data[2], data[-1]
-                elif data[0] == 'c':
-                    abc[2], err_abc[2] = data[2], data[-1]
-                elif data[0] == 'alpha':
-                    ang[0], err_ang[0] = data[2], data[-1]
-                elif data[0] == 'beta':
-                    ang[1], err_ang[1] = data[2], data[-1]
-                elif data[0] == 'gamma':
-                    ang[2], err_ang[2] = data[2], data[-1]
-                elif data[0][0] == '-':
-                    lattice = {'abc': abc, 'ang': ang, 'err_abc': err_abc, 'err_ang': err_ang}
-                    lattice_array.append(lattice)
-                    break
-    outfile.close()
-
-    return lattice_array
-
-
-
-def read_energy(outfilename):
+def _read_energy(outfilename):
     """
     Read single-point from a completed GULP job
 
@@ -282,7 +263,7 @@ def read_energy(outfilename):
 
 
 
-def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
+def _read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
     """
     Read phonon dispersion from a complete GULP job
 
@@ -308,7 +289,7 @@ def read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
 
 
 
-def read_atomic_charges(outfilename):
+def _read_atomic_charges(outfilename):
     """
     Read atomic charge information from a completed GULP job file
 
@@ -342,8 +323,7 @@ def read_atomic_charges(outfilename):
 
 
 
-
-def read_structure(outfilename, relax_cell=True, initial_box=None):
+def _read_structure(outfilename, relax_cell=True, initial_box=None):
     """
     Read converged structure (cell and atomic positions) from the MD job
 
@@ -356,7 +336,7 @@ def read_structure(outfilename, relax_cell=True, initial_box=None):
     :param initial_box: Initial simulation cell used for the MD job
     :type initial_box: 3X3 np.ndarray
 
-    :returns: 2D np.array containing the phonon dispersion in THz
+    :returns: xtal.AtTraj object with (optimized) individual structures as separate snapshots
     """
     relaxed = xtal.AtTraj()
     relaxed.box = np.zeros((3,3))

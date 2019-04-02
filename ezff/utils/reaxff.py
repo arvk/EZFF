@@ -2,6 +2,8 @@ import numpy as np
 import itertools
 import math
 
+
+
 class reax_forcefield:
     """
     ReaxFF forcefield class. Used for generating ReaxFF templates
@@ -28,6 +30,8 @@ class reax_forcefield:
         elif not filestring is None:
             self.read_forcefield_from_string(filestring)
 
+
+
     def read_forcefield_from_file(self,filename):
         """
         Read ReaxFF forcefield from external file
@@ -41,8 +45,8 @@ class reax_forcefield:
 
         # Parse forcefield from read-in string
         self.read_forcefield_from_string(ff)
-
         return
+
 
 
     def read_forcefield_from_string(self,filestring):
@@ -57,10 +61,12 @@ class reax_forcefield:
         self.full = list_of_strings
         #print(self.full)
         # Split forcefield
-        self.split_forcefield()
+        self._split_forcefield()
         return
 
-    def split_forcefield(self):
+
+
+    def _split_forcefield(self):
         """
         Split ReaxFF forcefield into sections corresponding to general, one-body, two-body, three-body, four-body, offdiagonal and H-bond sections
         """
@@ -124,7 +130,8 @@ class reax_forcefield:
         self.hbond = hbond
 
 
-    def get_element_number(self,element):
+
+    def _get_element_number(self,element):
         """
         Get the numerical index of an element in the ReaxFF forcefield file
 
@@ -137,7 +144,9 @@ class reax_forcefield:
                 return i+1
         return 0
 
-    def template_qeq(self, e1, bounds):
+
+
+    def _template_qeq(self, e1, bounds):
        """
        Generate decision variable for electrostatic energy equation for a particular element
 
@@ -148,7 +157,7 @@ class reax_forcefield:
        :type bounds: float
 
        """
-       ie1 = self.get_element_number(e1)
+       ie1 = self._get_element_number(e1)
        if ie1 == 0: return
 
        # gamma, chi and eta
@@ -178,7 +187,7 @@ class reax_forcefield:
 
        return
 
-    def template_bond_order(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
+    def _template_bond_order(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
         """
         Generate decision variables in the bond-order equation for bonds between two elements
 
@@ -198,7 +207,7 @@ class reax_forcefield:
         :type triple_bond: bool
 
         """
-        ie1, ie2 = self.get_element_number(e1), self.get_element_number(e2)
+        ie1, ie2 = self._get_element_number(e1), self._get_element_number(e2)
 
         #-------------------#
         #--- SINGLE BOND ---#
@@ -309,7 +318,7 @@ class reax_forcefield:
 
 
 
-    def template_bond_energy_attractive(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
+    def _template_bond_energy_attractive(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
         """
         Generate decision variables related to the two-body attractive term
 
@@ -328,7 +337,7 @@ class reax_forcefield:
         :param triple_bond: Flag for the presence of a triple-bond between elements e1 and e2
         :type triple_bond: bool
         """
-        ie1, ie2 = self.get_element_number(e1), self.get_element_number(e2)
+        ie1, ie2 = self._get_element_number(e1), self._get_element_number(e2)
 
         #-------------------#
         #--- SINGLE BOND ---#
@@ -400,7 +409,7 @@ class reax_forcefield:
 
 
 
-    def template_bond_energy_vdW(self, e1, e2, f13 = False, bounds = 0.1):
+    def _template_bond_energy_vdW(self, e1, e2, f13 = False, bounds = 0.1):
         """
         Generate decision variables related to the two-body repulsive (i.e. van der Waals) term
 
@@ -416,7 +425,7 @@ class reax_forcefield:
         :param f13: Flag for the optimization of common variables
         :type f13: bool
         """
-        ie1, ie2 = self.get_element_number(e1), self.get_element_number(e2)
+        ie1, ie2 = self._get_element_number(e1), self._get_element_number(e2)
 
         # Dij, rvdWm alpha_ij in off-diagonal
         for index, line in enumerate(self.offdiagonal[1:]):
@@ -484,7 +493,7 @@ class reax_forcefield:
 
 
 
-    def template_threebody_energy(self, e1, e2, e3, bounds = 0.1):
+    def _template_threebody_energy(self, e1, e2, e3, bounds = 0.1):
         """
         Generate decision variables related to the three-body angle term
 
@@ -502,9 +511,9 @@ class reax_forcefield:
         """
         # theta0, Pval1, Pval2 in threebody
         for triplet in list(set(list(itertools.permutations([e1,e2,e3])))):
-            ie1 = self.get_element_number(triplet[0])
-            ie2 = self.get_element_number(triplet[1])
-            ie3 = self.get_element_number(triplet[2])
+            ie1 = self._get_element_number(triplet[0])
+            ie2 = self._get_element_number(triplet[1])
+            ie3 = self._get_element_number(triplet[2])
             for index, line in enumerate(self.threebody[1:]):
                 if int(line[0]) == ie1 and int(line[1]) == ie2 and int(line[2]) == ie3:
                     line_number = (1 + (1*index))
@@ -527,7 +536,7 @@ class reax_forcefield:
 
 
 
-    def template_fourbody_energy(self, e1, e2, e3, e4, bounds = 0.1):
+    def _template_fourbody_energy(self, e1, e2, e3, e4, bounds = 0.1):
         """
         Generate decision variables related to the four-body dihedral term
 
@@ -548,10 +557,10 @@ class reax_forcefield:
         """
         # V1, V2, V3, Ptor1 in fourbody
         for quartet in list(set(list(itertools.permutations([e1,e2,e3,e4])))):
-            ie1 = self.get_element_number(quartet[0])
-            ie2 = self.get_element_number(quartet[1])
-            ie3 = self.get_element_number(quartet[2])
-            ie4 = self.get_element_number(quartet[3])
+            ie1 = self._get_element_number(quartet[0])
+            ie2 = self._get_element_number(quartet[1])
+            ie3 = self._get_element_number(quartet[2])
+            ie4 = self._get_element_number(quartet[3])
 
             for index, line in enumerate(self.fourbody[1:]):
                 if int(line[0]) == ie1 and int(line[1]) == ie2 and int(line[2]) == ie3 and int(line[3]) == ie4:
@@ -617,7 +626,7 @@ class reax_forcefield:
 
         """
         # GET ONE_BODY_PARAMETERS SPECIFIC TO QEQ
-        self.template_qeq(e1,bounds)
+        self._template_qeq(e1,bounds)
         return
 
 
@@ -644,9 +653,9 @@ class reax_forcefield:
         :type common: bool
         """
         # GET BOND_ORDER_PARAMETERS
-        self.template_bond_order(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
-        self.template_bond_energy_attractive(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
-        self.template_bond_energy_vdW(e1,e2, f13 = common, bounds = bounds)
+        self._template_bond_order(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
+        self._template_bond_energy_attractive(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
+        self._template_bond_energy_vdW(e1,e2, f13 = common, bounds = bounds)
         return
 
     def make_template_threebody(self, e1, e2, e3, bounds = 0.1, common = False):
@@ -668,7 +677,7 @@ class reax_forcefield:
         :param common: Flag for the optimization of common parameters
         :type common: bool
         """
-        self.template_threebody_energy(e1, e2, e3, bounds = bounds)
+        self._template_threebody_energy(e1, e2, e3, bounds = bounds)
         return
 
     def make_template_fourbody(self, e1, e2, e3, e4, bounds = 0.1, common = False):
@@ -693,7 +702,7 @@ class reax_forcefield:
         :param common: Flag for the optimization of common parameters
         :type common: bool
         """
-        self.template_fourbody_energy(e1, e2, e3, e4, bounds = bounds)
+        self._template_fourbody_energy(e1, e2, e3, e4, bounds = bounds)
         return
 
 

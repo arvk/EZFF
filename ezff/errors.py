@@ -7,6 +7,8 @@ from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolE
 from platypus.types import Real, Integer
 from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
 
+
+
 def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
     """
     Calculate error between MD-computed phonon dispersion and the ground-truth phonon dispersion with user-defined weighting schemes
@@ -57,60 +59,6 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
 
 
 
-
-def error_PES_scan(md_scan, gt_scan, weights='uniform', verbose=False):
-    """
-    Calculate error between MD-computed potential energy surface and the ground-truth potential energy surface with user-defined weighting schemes
-
-    :param md_disp: MD-computed potential energy surface
-    :type md_disp: 1D np.array
-
-    :param gt_disp: Ground-truth potential energy surface
-    :type gt_disp: 1D np.array
-
-    :param weights: User-defined weighting scheme for calculating errors. Possible values are
-                    ``uniform`` - where errors from all points on the PES are weighted equally,
-                    ``minima`` - where errors from lower-energy points are assigned greater weights,
-                    ``dissociation`` - where errors from highest-energy points are assigned greater weights, and
-                    `list` - 1-D list of length equal to number of points on the PES scans
-    :type weights: str `or` list
-
-    :param verbose: Deprecated option for verbosity of error calculation routine
-    :type verbose: bool
-    """
-    # Perform sanity check. Number of bands should be equal between the two structures
-    if not len(md_scan) == len(gt_scan):
-        raise ValueError("MD and ground truth PES have different number of points! Aborting")
-        return
-
-    md_scan = np.array(md_scan)
-    gt_scan = np.array(gt_scan)
-
-    num_pes = len(gt_scan)
-    W = np.ones(num_pes)
-    if weights == 'uniform':
-        pass
-    elif weights == 'minima':
-        min_E = np.amin(gt_scan)
-        max_E = np.amax(gt_scan)
-        W = np.reciprocal(((gt_scan-min_E)/max_E) + 0.1)
-    elif weights == 'dissociation':
-        min_E = np.amin(gt_scan)
-        max_E = np.amax(gt_scan)
-        W = (9.0*(gt_scan-min_E)/max_E) + 1.0
-    elif isinstance(weights,list) or isinstance(weights,np.ndarray):
-        if len(weights) == len(gt_scan):
-            W = np.array(weights)
-        else:
-            raise ValueError("Weights array and PES have different number of points! Aborting")
-
-    # Compute the RMS error between PES
-    rms_error = np.linalg.norm((md_scan - gt_scan) * W)
-    return rms_error
-
-
-
-
 def error_structure_distortion(MD=None, GT=None):
     """
     Calculate error due to relaxation of atoms in the initial structure. The error is the sum of root mean square displacement of atoms.
@@ -143,7 +91,6 @@ def error_structure_distortion(MD=None, GT=None):
         error += np.linalg.norm(np.array(errors_this_snapshot))
 
     return error
-
 
 
 

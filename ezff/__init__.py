@@ -15,6 +15,8 @@ from .errors import *
 
 __version__ = '0.9.3' # Update setup.py if version changes
 
+
+
 class OptProblem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
@@ -46,6 +48,8 @@ class OptProblem(Problem):
         self.variables = variables
         self.template = template
 
+
+
     def evaluate(self, solution):
         """
         Wrapper for platypus.Problem.evaluate . Takes the array of current decision variables and repackages it as a dictionary for the error function
@@ -57,6 +61,7 @@ class OptProblem(Problem):
         solution.objectives[:] = self.error_function(current_var_dict)
 
 
+
 class Pool(MPIPool):
     """
     Wrapper for platypus.MPIPool
@@ -66,6 +71,7 @@ class Pool(MPIPool):
     """
     def __init__(self, comm=None, debug=False, loadbalance=False):
         super(Pool, self).__init__(comm=comm, debug=debug, loadbalance=loadbalance)
+
 
 
 def optimize(problem, algorithm, iterations=100, write_forcefields=None):
@@ -85,7 +91,6 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     :type write_forcefields: int or None
 
     """
-
     # Convert algorithm and iterations into lists
     if not isinstance(algorithm, list):
         algorithm = [algorithm]
@@ -100,7 +105,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
     for stage in range(0,len(algorithm)):
 
         # Construct an algorithm
-        algorithm_for_this_stage = generate_algorithm(algorithm[stage]["myproblem"],
+        algorithm_for_this_stage = _generate_algorithm(algorithm[stage]["myproblem"],
                                                       algorithm[stage]["algorithm_string"],
                                                       algorithm[stage]["population"],
                                                       algorithm[stage]["mutation_probability"],
@@ -144,7 +149,30 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
 
 
 
-def pick_algorithm(myproblem, algorithm, population, mutation_probability, current_solution, evaluator=None):
+def Algorithm(myproblem, algorithm_string, population=1024, mutation_probability=None, pool=None):
+    """
+    Provide a uniform interface to initialize an algorithm class for serial and parallel execution
+
+    :param myproblem: EZFF Problem to be optimized
+    :type myproblem: Problem
+
+    :param algorithm_string: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
+    :type algorithm_string: str
+
+    :param population: Population size for genetic algorithms
+    :type population: int
+
+    :param mutation_probability: Probability of a decision variable to undergo mutation to a random value within defined bounds
+    :type mutation_probability: float between 0.0 and 1.0
+
+    :param pool: MPI pool for parallel execution. If this is None, serial execution is assumed
+    :type pool: MPIPool or None
+    """
+    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "mutation_probability": mutation_probability, "pool": pool}
+
+
+
+def _pick_algorithm(myproblem, algorithm, population, mutation_probability, current_solution, evaluator=None):
     """
     Return a serial or parallel platypus.Algorithm object based on input string
 
@@ -208,35 +236,14 @@ def pick_algorithm(myproblem, algorithm, population, mutation_probability, curre
 
 
 
-def Algorithm(myproblem, algorithm_string, population=1024, mutation_probability=None, pool=None):
-    """
-    Provide a uniform interface to initialize an algorithm class for serial and parallel execution
-
-    :param myproblem: EZFF Problem to be optimized
-    :type myproblem: Problem
-
-    :param algorithm_string: EZFF Algorithm to use for optimization. Allowed options are ``NSGAII``, ``NSGAIII`` and ``IBEA``
-    :type algorithm_string: str
-
-    :param population: Population size for genetic algorithms
-    :type population: int
-
-    :param mutation_probability: Probability of a decision variable to undergo mutation to a random value within defined bounds
-    :type mutation_probability: float between 0.0 and 1.0
-
-    :param pool: MPI pool for parallel execution. If this is None, serial execution is assumed
-    :type pool: MPIPool or None
-    """
-    return {"myproblem": myproblem, "algorithm_string": algorithm_string, "population": population, "mutation_probability": mutation_probability, "pool": pool}
-
-def generate_algorithm(myproblem, algorithm_string, population, mutation_probability, current_solution, pool):
+def _generate_algorithm(myproblem, algorithm_string, population, mutation_probability, current_solution, pool):
     if pool is None:
-        algorithm = pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution)
+        algorithm = _pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution)
     else:
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
         else:
             evaluator = PoolEvaluator(pool)
-            algorithm = pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution, evaluator=evaluator)
+            algorithm = _pick_algorithm(myproblem, algorithm_string, population=population, mutation_probability=mutation_probability, current_solution=current_solution, evaluator=evaluator)
     return algorithm

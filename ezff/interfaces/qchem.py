@@ -3,6 +3,8 @@ import numpy as np
 import xtal
 from ezff.utils import convert_units as convert
 
+
+
 def read_structure(outfilename):
     """
     Read-in a multiple partially-converged structures from a PES scan (including bond-scans, angle-scans and dihedral-scans)
@@ -45,8 +47,6 @@ def read_structure(outfilename):
 
 
 
-
-
 def read_energy(outfilename):
     """
     Read-in a multiple partially-converged structures from a PES scan (including bond-scans, angle-scans and dihedral-scans)
@@ -73,9 +73,6 @@ def read_energy(outfilename):
                 energies.append(energy_in_Hartrees * convert.energy['Ha']['eV'])
         outfile.close()
     return np.array(energies)
-
-
-
 
 
 
