@@ -9,15 +9,15 @@ from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
 
 
 
-def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
+def error_phonon_dispersion(MD=None, GT=None, weights='uniform', verbose=False):
     """
     Calculate error between MD-computed phonon dispersion and the ground-truth phonon dispersion with user-defined weighting schemes
 
-    :param md_disp: MD-computed phonon dispersion curve
-    :type md_disp: 2D np.array
+    :param MD: MD-computed phonon dispersion curve
+    :type MD: 2D np.array
 
-    :param gt_disp: Ground-truth phonon dispersion curve
-    :type gt_disp: 2D np.array
+    :param GT: Ground-truth phonon dispersion curve
+    :type GT: 2D np.array
 
     :param weights: User-defined weighting scheme for calculating errors provided as a list of numbers, one per band. Possible values are
                     ``uniform`` - where errors from all bands are equally weighted,
@@ -29,17 +29,17 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
     :type verbose: bool
     """
     # Perform sanity check. Number of bands should be equal between the two structures
-    if not len(md_disp) == len(gt_disp):
+    if not len(MD) == len(GT):
         raise ValueError("MD and ground truth dispersions have different number of bands")
         return
 
     # Create array of weights - one value per band
-    num_band = len(md_disp)
+    num_band = len(MD)
     if weights == 'uniform':
         W = np.ones(num_band)
     elif weights == 'acoustic':
-        maxfreq = np.amax(gt_disp)
-        W = np.reciprocal((np.mean(gt_disp, axis=1)/maxfreq) + 0.1)
+        maxfreq = np.amax(GT)
+        W = np.reciprocal((np.mean(GT, axis=1)/maxfreq) + 0.1)
     elif isinstance(weights,list) or isinstance(weights,np.ndarray):
         if len(weights) == num_band:
             W = np.array(weights)
@@ -48,11 +48,11 @@ def error_phonon_dispersion(md_disp, gt_disp, weights='uniform', verbose=False):
 
     # Compute the RMS error between dispersions
     rms_error = 0.0
-    num_k_gt = len(gt_disp[0])
+    num_k_gt = len(GT[0])
     scaling = num_k_gt/100.0
-    for band_index in range(0, len(gt_disp)):
-        interp_md_band = np.interp(np.arange(0, num_k_gt), np.arange(0, 100)*scaling, md_disp[band_index])
-        rms_error += np.linalg.norm(interp_md_band - gt_disp[band_index]) * W[band_index]
+    for band_index in range(0, len(GT)):
+        interp_md_band = np.interp(np.arange(0, num_k_gt), np.arange(0, 100)*scaling, MD[band_index])
+        rms_error += np.linalg.norm(interp_md_band - GT[band_index]) * W[band_index]
 
     rms_error /= (num_k_gt * num_band)
     return rms_error
