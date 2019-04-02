@@ -10,7 +10,7 @@ try:
     from platypus.mpipool import MPIPool
 except ImportError:
     pass
-from .ffio import generate_forcefield
+from .ffio import *
 from .errors import *
 
 __version__ = '0.9.3' # Update setup.py if version changes
