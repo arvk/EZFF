@@ -61,6 +61,9 @@ def generate_forcefield(template_string, parameters, FFtype = None, outfile = No
 
     :param parameters: Numerical value of all decision variables in the form of variable:value pairs
     :type parameters: dict
+
+    :param FFtype: Type of forcefield being optimized. (e.g. reaxff, sw, lj, etc.)
+    :type FFtype: string
     """
     replaced_keys = ''
     for key, ranges in parameters.items():
