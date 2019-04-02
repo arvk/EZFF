@@ -1,7 +1,8 @@
 """Interface to VASP, the Vienna Ab initio Simulation Package"""
 import numpy as np
+import xtal
 
-def read_atomic_structure(self,structure_file):
+def read_atomic_structure(structure_file):
     """
     Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
 
