@@ -1,4 +1,4 @@
-"""This module provide general functions for EZFF"""
+"""This module provide functions for computing errors from previously completed MD runs"""
 import os
 import sys
 import xtal
@@ -112,6 +112,15 @@ def error_PES_scan(md_scan, gt_scan, weights='uniform', verbose=False):
 
 
 def error_structure_distortion(MD=None, GT=None):
+    """
+    Calculate error due to relaxation of atoms in the initial structure. The error is the sum of root mean square displacement of atoms.
+
+    :param MD: Relaxed structure after MD run
+    :type MD: xtal.AtTraj object
+
+    :param GT: Initial Ground-Truth structure used as input for MD calculations
+    :type GT: xtal.AtTraj object
+    """
     # Sanity checks -- Both inputs should be AtTraj objects
     if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
         print('ERROR_STRUCTURE_DISTORTION: Please provide xtal.AtTraj objects for comparison')
@@ -139,6 +148,15 @@ def error_structure_distortion(MD=None, GT=None):
 
 
 def error_lattice_constant(MD=None, GT=None):
+    """
+    Calculate error due to optimization of lattice constants in the initial structure.
+
+    :param MD: Relaxed structure after MD run
+    :type MD: xtal.AtTraj object
+
+    :param GT: Initial Ground-Truth structure used as input for MD calculations
+    :type GT: xtal.AtTraj object
+    """
     # Sanity checks -- Both inputs should be AtTraj objects
     if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
         print('ERROR_LATTICE_CONSTANT: Please provide xtal.AtTraj objects for comparison')
@@ -156,6 +174,15 @@ def error_lattice_constant(MD=None, GT=None):
 
 
 def error_atomic_charges(MD=None, GT=None):
+    """
+    Calculate error due to difference between MD-computed atomic charges and ground-truth atomic charges
+
+    :param MD: Relaxed structure after MD run
+    :type MD: xtal.AtTraj object
+
+    :param GT: Initial Ground-Truth structure used as input for MD calculations
+    :type GT: xtal.AtTraj object
+    """
     # Sanity checks -- Both inputs should be AtTraj objects
     if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
         print('ERROR_ATOMIC_CHARGES: Please provide xtal.AtTraj objects for comparison')
