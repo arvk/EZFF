@@ -18,4 +18,4 @@ EZFF - Easy forcefield fitting
 
 
 .. automodule:: ezff
-   :members: error_phonon_dispersion, optimize, read_atomic_structure, pick_algorithm
+   :members: optimize

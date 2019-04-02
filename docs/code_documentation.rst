@@ -13,6 +13,7 @@ The following links provide a detailed description of individual classes and met
 
    ezff
    ffio
+   errors
    interfaces.vasp
    interfaces.qchem
    interfaces.gulp
