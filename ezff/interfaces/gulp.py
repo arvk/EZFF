@@ -344,6 +344,20 @@ def read_atomic_charges(outfilename):
 
 
 def read_structure(outfilename, relax_cell=True, initial_box=None):
+    """
+    Read converged structure (cell and atomic positions) from the MD job
+
+    :param outfilename: Path of file containing stdout of the GULP job
+    :type outfilename: str
+
+    :param relax_cell: Flag to identify if simulation cell was relaxed during the MD job
+    :type relax_cell: boolean
+
+    :param initial_box: Initial simulation cell used for the MD job
+    :type initial_box: 3X3 np.ndarray
+
+    :returns: 2D np.array containing the phonon dispersion in THz
+    """
     relaxed = xtal.AtTraj()
     relaxed.box = np.zeros((3,3))
     if (not relax_cell) and (initial_box is not None):
