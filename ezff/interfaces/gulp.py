@@ -176,6 +176,9 @@ class job:
     def read_atomic_charges(self):
         return read_atomic_charges(self.outfile)
 
+    def read_structure(self):
+        return read_structure(self.outfile, relax_cell=self.options['relax_cell'], initial_box=self.structure.box)
+
 
 def read_elastic_moduli(outfilename):
     """
@@ -336,3 +339,85 @@ def read_atomic_charges(outfilename):
                     atom = snapshot.create_atom(xtal.Atom)
                     atom.charge = float(charges[-1])
     return structure
+
+
+
+
+def read_structure(outfilename, relax_cell=True, initial_box=None):
+    relaxed = xtal.AtTraj()
+    relaxed.box = np.zeros((3,3))
+    if (not relax_cell) and (initial_box is not None):
+        relaxed.box = initial_box
+
+    # Read number of atoms
+    outfile = open(outfilename, 'r')
+    for line in outfile:
+        if 'Number of irreducible atoms/shells' in line.strip():
+            snapshot = relaxed.create_snapshot(xtal.Snapshot)
+            num_atoms = int(line.strip().split()[-1])
+            for atomID in range(num_atoms):
+                atom = snapshot.create_atom(xtal.Atom)
+                atom.cart = np.array([0.0,0.0,0.0])
+                atom.fract = np.array([0.0,0.0,0.0])
+    outfile.close()
+
+    snapID = 0
+    convert_to_cart = True
+    outfile = open(outfilename, 'r')
+
+    while True:
+        oneline = outfile.readline()
+
+        if not oneline: # break for EOF
+            break
+
+        if 'Comparison of initial and final' in oneline:
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            dummyline = outfile.readline()
+            while True:
+                data = outfile.readline().strip().split()
+                if data[0].isdigit():
+                    atomID = int(data[0])-1
+                    if data[1] == 'x':
+                        axisID = 0
+                    elif data[1] == 'y':
+                        axisID = 1
+                    else:
+                        axisID = 2
+
+                    if data[5] == 'Cartesian':
+                        relaxed.snaplist[snapID].atomlist[atomID].cart[axisID] = float(data[3])
+                        convert_to_cart = False
+                    elif data[5] == 'Fractional':
+                        relaxed.snaplist[snapID].atomlist[atomID].fract[axisID] = float(data[3])
+                elif data[0][0] == '-':
+                    break
+
+            snapID += 1
+    outfile.close()
+
+    if convert_to_cart:
+        if relax_cell:
+            outfile = open(outfilename, 'r')
+            snapID = 0
+            while True:
+                oneline = outfile.readline()
+
+                if not oneline: # break for EOF
+                    break
+
+                if 'Final Cartesian lattice vectors (Angstroms)' in oneline:
+                    dummyline = outfile.readline()
+                    for i in range(3):
+                        relaxed.box[i][0:3] = list(map(float,outfile.readline().strip().split()))
+                    relaxed.make_dircar_matrices()
+                    relaxed.snaplist[snapID].dirtocar()
+                    snapID += 1
+            outfile.close()
+        else:
+            relaxed.make_dircar_matrices()
+            relaxed.dirtocar()
+
+    return relaxed
