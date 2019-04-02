@@ -81,7 +81,8 @@ def my_error_function(variable_values):
 
     # Compute 5 errors from the 3 GULP jobs
     error_abc, error_ang = ezff.error_lattice_constant(MD=md_relaxed_structure, GT=gt_relax_structure)
-    lattice_error = np.linalg.norm(error_abc[0:2])   # Norm of errors in 'a' and 'b' lattice constants
+    a_lattice_error = np.linalg.norm(error_abc[0])   # Error in 'a' lattice constant
+    b_lattice_error = np.linalg.norm(error_abc[1])   # Error in 'b' lattice constant
 
     md_c11 = md_relaxed_moduli[0][0,0] * md_relaxed_structure.box[2,2] * (2.0/13.97)  # Extracting c11 for a bulk-like layered structure from the monolayer GULP calculation
     modulus_error = np.linalg.norm(md_c11 - gt_c11)
@@ -90,10 +91,10 @@ def my_error_function(variable_values):
     phon_error_expanded = ezff.error_phonon_dispersion(MD=md_expanded_disp_GM, GT=gt_expanded_disp_GM, weights='acoustic')
     phon_error_compressed = ezff.error_phonon_dispersion(MD=md_compressed_disp_GM, GT=gt_compressed_disp_GM, weights='acoustic')
 
-    return [lattice_error, modulus_error, phon_error_relaxed, phon_error_compressed, phon_error_expanded]
+    return [a_lattice_error, b_lattice_error, modulus_error, phon_error_relaxed, phon_error_compressed, phon_error_expanded]
 
 pool = ezff.Pool()
-problem = ezff.OptProblem(num_errors = 5, variable_bounds = bounds, error_function = my_error_function, template = template)
+problem = ezff.OptProblem(num_errors = 6, variable_bounds = bounds, error_function = my_error_function, template = template)
 algorithm = ezff.Algorithm(problem, 'NSGAII', population = 3, pool = pool)
 ezff.optimize(problem, algorithm, iterations = 5)
 pool.close()
