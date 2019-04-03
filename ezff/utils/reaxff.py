@@ -171,17 +171,17 @@ class reax_forcefield:
        eta   = float(self.onebody[line_number][15-8-1]) # 15th term, -8 for previous line, -1 for 0 indexing
 
        # gamma
-       self.onebody[line_number-1][6-1] = '<<gam_'+e1+'_'+'>>'
+       self.onebody[line_number-1][6-1] = '<<gam_'+e1+'>>'
        delta = bounds * np.absolute(gamma)
        self.params_write.append(['gam_'+e1, str(gamma-delta), str(gamma+delta)])
 
        # chi
-       self.onebody[line_number][14-8-1] = '<<chi_'+e1+'_'+'>>'
+       self.onebody[line_number][14-8-1] = '<<chi_'+e1+'>>'
        delta = bounds * np.absolute(chi)
        self.params_write.append(['chi_'+e1, str(chi-delta), str(chi+delta)])
 
        # eta
-       self.onebody[line_number][15-8-1] = '<<eta_'+e1+'_'+'>>'
+       self.onebody[line_number][15-8-1] = '<<eta_'+e1+'>>'
        delta = bounds * np.absolute(eta)
        self.params_write.append(['eta_'+e1, str(eta-delta), str(eta+delta)])
 
