@@ -1,12 +1,15 @@
 import ezff
 from ezff.interfaces import gulp, qchem
+from ezff.utils.reaxff import reax_forcefield
 import time
 
 # Define ground truths
 gt_gs = qchem.read_structure('ground_truths/optCHOSx.out')
 gt_gs_energy = qchem.read_energy('ground_truths/optCHOSx.out')
-gt_scan = qchem.read_structure('ground_truths/scanCHOSx.out')
-gt_scan_energy = qchem.read_energy('ground_truths/scanCHOSx.out')
+gt_freq_scan = qchem.read_structure('ground_truths/frequency_length_scan/CHOSx.out')
+gt_freq_scan_energy = qchem.read_energy('ground_truths/frequency_length_scan/CHOSx.out')
+gt_full_scan = qchem.read_structure(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
+gt_full_scan_energy = qchem.read_energy(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
 
 def my_error_function(rr):
     # Get a unique path for GULP jobs from the MPI rank. Set to '0' for serial jobs
@@ -28,26 +31,37 @@ def my_error_function(rr):
     md_gs_energy = md_gs_job.read_energy()
     md_gs_job.cleanup()
 
-
-    # Calculate PES Scan
-    md_scan_job = gulp.job(path = path)
-    md_scan_job.structure = gt_scan
-    md_scan_job.forcefield = ezff.generate_forcefield(template, rr, FFtype = 'reaxff')
-    md_scan_job.options['pbc'] = False
-    md_scan_job.options['relax_atoms'] = False
-    md_scan_job.options['relax_cell'] = False
+    # Calculate PES Scan for frequency error
+    md_freq_scan_job = gulp.job(path = path)
+    md_freq_scan_job.structure = gt_freq_scan
+    md_freq_scan_job.forcefield = ezff.generate_forcefield(template, rr, FFtype = 'reaxff')
+    md_freq_scan_job.options['pbc'] = False
+    md_freq_scan_job.options['relax_atoms'] = False
+    md_freq_scan_job.options['relax_cell'] = False
     # Run GULP calculation
-    md_scan_job.run(command='gulp')
+    md_freq_scan_job.run(command='gulp')
     # Read output from completed GULP job and clean-up
-    md_scan_energy = md_scan_job.read_energy()
-    md_scan_job.cleanup()
+    md_freq_scan_energy = md_freq_scan_job.read_energy()
+    md_freq_scan_job.cleanup()
+
+    # Calculate PES Scan for dissociation error
+    md_full_scan_job = gulp.job(path = path)
+    md_full_scan_job.structure = gt_full_scan
+    md_full_scan_job.forcefield = ezff.generate_forcefield(template, rr, FFtype = 'reaxff')
+    md_full_scan_job.options['pbc'] = False
+    md_full_scan_job.options['relax_atoms'] = False
+    md_full_scan_job.options['relax_cell'] = False
+    # Run GULP calculation
+    md_full_scan_job.run(command='gulp')
+    # Read output from completed GULP job and clean-up
+    md_full_scan_energy = md_full_scan_job.read_energy()
+    md_full_scan_job.cleanup()
+
 
     # Calculate error
-    freq_error = ezff.error_energy(md_scan_energy-md_gs_energy, gt_scan_energy-gt_gs_energy, weights = 'minima')
-    dissociation_error = ezff.error_energy(md_scan_energy-md_gs_energy, gt_scan_energy-gt_gs_energy, weights = 'dissociation')
+    freq_error = ezff.error_energy(md_freq_scan_energy-md_gs_energy, gt_freq_scan_energy-gt_gs_energy, weights = 'minima')
+    dissociation_error = ezff.error_energy(md_full_scan_energy-md_gs_energy, gt_full_scan_energy-gt_gs_energy, weights = 'dissociation')
     return [freq_error, dissociation_error]
-
-
 
 
 pool = ezff.Pool()
@@ -63,8 +77,8 @@ if pool.is_master():
 time.sleep(5.0)
 
 # Read template and variable ranges
-bounds = ffio.read_variable_bounds('param_ranges', verbose=False)
-template = ffio.read_forcefield_template('ff.template.generated')
+bounds = ezff.read_variable_bounds('param_ranges', verbose=False)
+template = ezff.read_forcefield_template('ff.template.generated')
 
 problem = ezff.OptProblem(num_errors = 2, variable_bounds = bounds, error_function = my_error_function, template = template)
 algorithm = ezff.Algorithm(problem, 'NSGAII', population = 128, pool = pool)
