@@ -93,14 +93,14 @@ class job:
             else:
                 header_line += 'conv '
 
+        if header_line == '':
+            header_line = 'gradient '
+
         if opts['phonon_dispersion'] is not None:
             header_line += 'phonon nofrequency '
 
         if opts['atomic_charges']:
-            header_line += 'qeq '
-
-        if header_line == '':
-            header_line = 'single '
+            header_line += 'qiterative '
 
         header_line += 'comp property '
         script.write(header_line + '\n')
@@ -306,7 +306,7 @@ def _read_atomic_charges(outfilename):
             break
         if 'Output for configuration' in oneline:
             snapshot = structure.create_snapshot(xtal.Snapshot)
-        if 'Final charges from QEq' in oneline:
+        if 'Final charges from ReaxFF' in oneline:
             snapshot.atomlist = []
             dummyline = outfile.readline()
             dummyline = outfile.readline()
