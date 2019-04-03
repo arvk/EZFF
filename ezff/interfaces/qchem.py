@@ -15,6 +15,7 @@ def read_structure(outfilename):
     :returns: ``xtal`` trajectory object with structures and converged energies along the PES scan as individual snapshots
     """
     structure = xtal.AtTraj()
+    structure.box = np.zeros((3,3))
     energies = []
 
     if isinstance(outfilename, list):
@@ -86,6 +87,7 @@ def read_atomic_charges(outfilename):
     :returns: ``xtal`` trajectory object with structures and converged energies along the PES scan as individual snapshots
     """
     structure = xtal.AtTraj()
+    structure.box = np.zeros((3,3))
     energies = []
 
     if isinstance(outfilename, list):

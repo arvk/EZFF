@@ -298,6 +298,7 @@ def _read_atomic_charges(outfilename):
     :returns: xtal object with optimized charge information
     """
     structure = xtal.AtTraj()
+    structure.box = np.zeros((3,3))
     outfile = open(outfilename, 'r')
 
     while True:
