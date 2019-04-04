@@ -8,7 +8,7 @@ class reax_forcefield:
     """
     ReaxFF forcefield class. Used for generating ReaxFF templates
     """
-    def __init__(self, filename = None, filestring = None, template = 'ff.template.generated', ranges = 'param_ranges'):
+    def __init__(self, filename = None, filestring = None, template = 'ff.template.generated', ranges = 'param_ranges', bo_threshold = 1e-8):
         """
         :param filename: ReaxFF forcefield filename
         :type filename: str
@@ -25,6 +25,7 @@ class reax_forcefield:
         self.params_write = []
         self.template = template
         self.ranges = ranges
+        self.bo_threshold = bo_threshold
         if not filename is None:
             self.read_forcefield_from_file(filename)
         elif not filestring is None:
@@ -1049,7 +1050,6 @@ class reax_forcefield:
             string += '%-2s core %-2s core %-2s core %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], float(line[3]), float(line[4]), float(line[5]), float(line[6]))
 
 
-
         #TORSION PARAMETERS
         string += '#\n'
         string += '#  Torsion parameters \n'
@@ -1063,6 +1063,12 @@ class reax_forcefield:
         for line in self.fourbody[1:]:
             n1, n2, n3, n4 = int(line[0]), int(line[1]), int(line[2]), int(line[3])
             string += '%-2s core %-2s core %-2s core %-2s core %8.4f %8.4f %8.4f %8.4f %8.4f\n' % (element_number[n1], element_number[n2], element_number[n3], element_number[n4], float(line[4]), float(line[5]), float(line[6]), float(line[7]), float(line[8]))
+
+
+        #GENERAL PARAMETERS - Thresholds and cutoffs
+        string += '\n\n'
+        string += 'reaxfftol {0:.12f}'.format(self.bo_threshold)
+        string += '\n\n'
 
         if outfilename is not None:
             libfile = open(outfilename, 'w')
