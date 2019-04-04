@@ -113,7 +113,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
                                                       algorithm[stage]["pool"])
 
         if not isinstance(write_forcefields, int):
-            write_forcefields = iterations[stage]
+            write_forcefields = np.sum([iterations[stage_no] for stage_no in range(stage+1)])
 
         for i in range(0, iterations[stage]):
             total_epochs += 1
@@ -137,7 +137,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
             varfile.close()
             objfile.close()
 
-            if total_epochs % (write_forcefields-1) == 0:
+            if total_epochs % write_forcefields == 0:
                 if not os.path.isdir(outdir+'/forcefields'):
                     os.makedirs(outdir+'/forcefields')
                 for sol_index, solution in enumerate(unique(nondominated(algorithm_for_this_stage.result))):
