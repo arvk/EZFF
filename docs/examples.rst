@@ -77,3 +77,15 @@ Features demonstrated in this example
 1. All features from rxff-serial
 2. Using utils.reaxff methods for generating forcefields templates and variable range files
 3. Heterogeneous weighting scheme for calculating errors from potential energy surface scans
+
+
+rxff-charge-serial
+------------------
+Optimization of charge parameters in the ReaxFF forcefield for a thio-ketone monomer against 2 objective -- **atomic charges** and **structural distortion**
+
+Features demonstrated in this example
+
+1. All features from rxff-serial
+2. Use of make_template_qeq
+3. Use of ezff.error_atomic_charges and ezff.error_structure_distortion
+4. Demonstration of mutation_probability keyword in the ezff.Algorithm call
