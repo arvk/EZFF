@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='EZFF',
-      version='0.9.3', # Update __init__.py if the version changes!
+      version='0.9.4', # Update __init__.py if the version changes!
       description='Multiobjective forcefield optimization for Molecular Dynamics',
       author='Aravind Krishnamoorthy',
       author_email='arvk@users.noreply.github.com',
@@ -11,7 +11,7 @@ setup(name='EZFF',
       install_requires=[
           'platypus-opt >= 1.0.3',
           'mpi4py >= 3.0.0',
-          'xtal >= 0.9.0',
+          'xtal >= 0.9.1',
       ],
       classifiers=[
           'Development Status :: 4 - Beta',

@@ -13,7 +13,7 @@ except ImportError:
 from .ffio import *
 from .errors import *
 
-__version__ = '0.9.3' # Update setup.py if version changes
+__version__ = '0.9.4' # Update setup.py if version changes
 
 
 
