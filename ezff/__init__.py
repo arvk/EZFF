@@ -141,7 +141,7 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
                 if not os.path.isdir(outdir+'/forcefields'):
                     os.makedirs(outdir+'/forcefields')
                 for sol_index, solution in enumerate(unique(nondominated(algorithm_for_this_stage.result))):
-                    ff_name = outdir + '/forcefields/FF_' + str(sol_index)
+                    ff_name = outdir + '/forcefields/FF_' + str(sol_index+1)
                     parameters_dict = dict(zip(problem.variables, solution.variables))
                     generate_forcefield(problem.template, parameters_dict, outfile=ff_name)
 
