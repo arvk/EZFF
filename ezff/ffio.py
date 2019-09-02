@@ -83,7 +83,7 @@ def generate_forcefield(template_string, parameters, FFtype = None, outfile = No
             if MD == 'GULP':
                 template_string = reax_forcefield(filestring=template_string).write_gulp_library()
             elif MD == 'LAMMPS':
-                template_string = reax_forcefield(filestring=template_string).new_write_formatted_forcefields()
+                template_string = reax_forcefield(filestring=template_string).write_formatted_forcefields()
 
     if outfile is not None:
         with open(outfile, 'w') as new_forcefield:
