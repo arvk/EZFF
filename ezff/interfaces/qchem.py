@@ -43,7 +43,22 @@ def read_structure(outfilename):
                         break
                     atom = snapshot.create_atom(xtal.Atom)
                     atom.element, atom.cart = coords.strip().split()[1], np.array(list(map(float,coords.strip().split()[2:5])))
+                xpos_this_snapshot = [atom.cart[0] for atom in snapshot.atomlist]
+                ypos_this_snapshot = [atom.cart[1] for atom in snapshot.atomlist]
+                zpos_this_snapshot = [atom.cart[2] for atom in snapshot.atomlist]
+                offset_vector = 0.0 - np.array([np.amin(xpos_this_snapshot), np.amin(ypos_this_snapshot), np.amin(zpos_this_snapshot)])
+                snapshot.move(offset_vector)
         outfile.close()
+
+    # Since the QChem structure is often non-periodic, we set up a box that is 50 Angstrom larger than the maximum extent of atoms
+    xpos = [atom.cart[0] for atom in snapshot.atomlist for snapshot in structure.snaplist]
+    ypos = [atom.cart[1] for atom in snapshot.atomlist for snapshot in structure.snaplist]
+    zpos = [atom.cart[2] for atom in snapshot.atomlist for snapshot in structure.snaplist]
+
+    structure.box[0][0] = np.amax(xpos) - np.amin(xpos) + 50.0
+    structure.box[1][1] = np.amax(ypos) - np.amin(ypos) + 50.0
+    structure.box[2][2] = np.amax(zpos) - np.amin(zpos) + 50.0
+
     return structure
 
 
