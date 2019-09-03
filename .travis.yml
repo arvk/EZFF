@@ -4,7 +4,7 @@ notifications:
 python:
   - "3.6"
 before_script:
-  - sudo apt-get install libcr-dev mpich2 mpich2-doc
+  - sudo apt-get install libcr-dev mpich mpich-doc
   - export PYTHONPATH=$PYTHONPATH:$(pwd)
   - pip install xtal
   - pip install mpi4py
