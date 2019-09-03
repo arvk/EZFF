@@ -17,5 +17,4 @@ def test_qchem_read_structure_singlepoint():
     has_correct_snapsize = (len(structure.snaplist) == 1)
     has_correct_atomsize = (len(structure.snaplist[0].atomlist) == 10)
     has_correct_data_1 = (np.linalg.norm(structure.snaplist[0].atomlist[0].cart) == pytest.approx(1.38097616))
-    has_correct_data_2 = (np.linalg.norm(structure.snaplist[0].atomlist[0].fract) == pytest.approx(1e-12))
-    assert (has_correct_snapsize and has_correct_atomsize and has_correct_data_1 and has_correct_data_2)
+    assert (has_correct_snapsize and has_correct_atomsize and has_correct_data_1)
