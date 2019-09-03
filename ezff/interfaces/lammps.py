@@ -30,6 +30,7 @@ class job:
 
         self.scriptfile = os.path.join(os.path.abspath(path), 'in.lmp')
         self.outfile = os.path.join(os.path.abspath(path), 'out.lmp')
+        self.dumpfile = os.path.join(os.path.abspath(path), 'out.dump')
         self.structfile = os.path.join(os.path.abspath(path), 'input.structure')
         self.structure = None
         self.forcefield = ''
@@ -90,8 +91,10 @@ class job:
                 print('cd '+ self.path + ' ; ' + system_call_command)
             os.system('cd '+ self.path + ' ; ' + system_call_command)
 
-            # Append output to the job outfile
+            # Append output to the job outfile and structure to job structurefile
             os.system('cat ' + outfile_single_snapshot + ' >> ' + self.outfile)
+            os.system('cat ' + os.path.join(os.path.abspath(self.path), 'tempdumpfile') + ' >> ' + self.dumpfile)
+            os.system('rm -f tempdumpfile')
 
 
     def _write_structure_file(self, snap_ID):
@@ -206,7 +209,7 @@ class job:
         script.write('\n')
 
         # Write out the summary
-        script.write('write_dump all custom final.dump id type element mass q x y z vx vy vz fx fy fz modify sort id element ' + ' '.join(opts['atom_sequence']).title() + ' \n')
+        script.write('write_dump all custom tempdumpfile id type element mass q x y z vx vy vz fx fy fz modify sort id element ' + ' '.join(opts['atom_sequence']).title() + ' \n')
 
         script.write('print "-----SUMMARY-----" \n')
         script.write('print "EZFF_TEMP ${ezff_T}" \n')
@@ -293,7 +296,7 @@ class job:
 
         :returns: xtal.AtTraj object with (optimized) individual structures as separate snapshots
         """
-        return _read_structure(self.outfile, relax_cell=self.options['relax_cell'], initial_box=self.structure.box)
+        return _read_structure(self.dumpfile)
 
 
 
@@ -435,95 +438,71 @@ def _read_atomic_charges(outfilename):
 
 
 
-def _read_structure(outfilename, relax_cell=True, initial_box=None):
+def _read_structure(outfilename):
     """
     Read converged structure (cell and atomic positions) from the MD job
 
     :param outfilename: Path of file containing stdout of the GULP job
     :type outfilename: str
 
-    :param relax_cell: Flag to identify if simulation cell was relaxed during the MD job
-    :type relax_cell: boolean
-
-    :param initial_box: Initial simulation cell used for the MD job
-    :type initial_box: 3X3 np.ndarray
-
     :returns: xtal.AtTraj object with (optimized) individual structures as separate snapshots
     """
+    print (outfilename)
     relaxed = xtal.AtTraj()
     relaxed.box = np.zeros((3,3))
-    if (not relax_cell) and (initial_box is not None):
-        relaxed.box = initial_box
 
-    # Read number of atoms
+    # Read number of atoms, box definition and atom coordinates
     outfile = open(outfilename, 'r')
     for line in outfile:
-        if 'Number of irreducible atoms/shells' in line.strip():
+        if 'NUMBER OF ATOMS' in line.strip():
             snapshot = relaxed.create_snapshot(xtal.Snapshot)
-            num_atoms = int(line.strip().split()[-1])
+            nextline = outfile.readline()
+            num_atoms = int(nextline.strip())
+        elif 'BOX BOUNDS' in line.strip():
+            if 'xy' in line.strip():
+                l1 = outfile.readline()
+                l2 = outfile.readline()
+                l3 = outfile.readline()
+                xlo_bound, xhi_bound, xy = list(map(float, l1.strip().split()))
+                ylo_bound, yhi_bound, xz = list(map(float, l2.strip().split()))
+                zlo_bound, zhi_bound, yz = list(map(float, l3.strip().split()))
+                xlo = xlo_bound - np.amin([0.0, xy, xz, xy+xz])
+                xhi = xhi_bound - np.amax([0.0, xy, xz, xy+xz])
+                ylo = ylo_bound - np.amin([0.0, yz])
+                yhi = yhi_bound - np.amax([0.0, yz])
+                zlo = zlo_bound
+                zhi = zhi_bound
+                lx = xhi - xlo
+                ly = yhi - ylo
+                lz = zhi - zlo
+                relaxed.abc = np.array([lx, np.sqrt((ly*ly)+(xy*xy)), np.sqrt((lz*lz)+(xz*xz)+(yz*yz))])
+                cosa = ((xy*xz)+(ly*yz))/(relaxed.abc[1]*relaxed.abc[2])
+                cosb = xz/relaxed.abc[2]
+                cosc = xy/relaxed.abc[1]
+                relaxed.ang = np.array([np.arccos(cosa), np.arccos(cosb), np.arccos(cosc)])
+                relaxed.abc_to_box()
+            else:
+                l1 = outfile.readline()
+                l2 = outfile.readline()
+                l3 = outfile.readline()
+                xlo, xhi = list(map(float, l1.strip().split()))
+                ylo, yhi = list(map(float, l2.strip().split()))
+                zlo, zhi = list(map(float, l3.strip().split()))
+                lx = xhi - xlo
+                ly = yhi - ylo
+                lz = zhi - zlo
+                relaxed.box[0][0] = lx
+                relaxed.box[1][1] = ly
+                relaxed.box[2][2] = lz
+        elif 'ATOMS' in line.strip():
             for atomID in range(num_atoms):
+                atom_details = outfile.readline().strip().split()
                 atom = snapshot.create_atom(xtal.Atom)
-                atom.cart = np.array([0.0,0.0,0.0])
-                atom.fract = np.array([0.0,0.0,0.0])
+                atom.element = atom_details[2].upper()
+                atom.charge = float(atom_details[4])
+                atom.cart = np.array(list(map(float,atom_details[5:8])))
+                atom.vel = np.array(list(map(float,atom_details[8:11])))
+                atom.force = np.array(list(map(float,atom_details[11:14])))
+
     outfile.close()
-
-    snapID = 0
-    convert_to_cart = True
-    outfile = open(outfilename, 'r')
-
-    while True:
-        oneline = outfile.readline()
-
-        if not oneline: # break for EOF
-            break
-
-        if 'Comparison of initial and final' in oneline:
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            while True:
-                data = outfile.readline().strip().split()
-                if data[0].isdigit():
-                    atomID = int(data[0])-1
-                    if data[1] == 'x':
-                        axisID = 0
-                    elif data[1] == 'y':
-                        axisID = 1
-                    else:
-                        axisID = 2
-
-                    if data[5] == 'Cartesian':
-                        relaxed.snaplist[snapID].atomlist[atomID].cart[axisID] = float(data[3])
-                        convert_to_cart = False
-                    elif data[5] == 'Fractional':
-                        relaxed.snaplist[snapID].atomlist[atomID].fract[axisID] = float(data[3])
-                elif data[0][0] == '-':
-                    break
-
-            snapID += 1
-    outfile.close()
-
-    if convert_to_cart:
-        if relax_cell:
-            outfile = open(outfilename, 'r')
-            snapID = 0
-            while True:
-                oneline = outfile.readline()
-
-                if not oneline: # break for EOF
-                    break
-
-                if 'Final Cartesian lattice vectors (Angstroms)' in oneline:
-                    dummyline = outfile.readline()
-                    for i in range(3):
-                        relaxed.box[i][0:3] = list(map(float,outfile.readline().strip().split()))
-                    relaxed.make_dircar_matrices()
-                    relaxed.snaplist[snapID].dirtocar()
-                    snapID += 1
-            outfile.close()
-        else:
-            relaxed.make_dircar_matrices()
-            relaxed.dirtocar()
-
     return relaxed
