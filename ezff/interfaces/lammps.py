@@ -288,7 +288,7 @@ class job:
 
         :returns: xtal.AtTraj object with optimized charge information
         """
-        return _read_atomic_charges(self.outfile)
+        return _read_structure(self.dumpfile) # read_structure already returns xtal object with charges
 
     def read_structure(self):
         """
@@ -400,41 +400,6 @@ def _read_energy(outfilename):
             energy_in_eV.append(float(line.strip().split()[-1]))
     outfile.close()
     return np.array(energy_in_eV)
-
-
-
-def _read_atomic_charges(outfilename):
-    """
-    Read atomic charge information from a completed GULP job file
-
-    :param outfilename: Filename of the GULP output file
-    :type outfilename: str
-    :returns: xtal object with optimized charge information
-    """
-    structure = xtal.AtTraj()
-    structure.box = np.zeros((3,3))
-    outfile = open(outfilename, 'r')
-
-    while True:
-        oneline = outfile.readline()
-        if not oneline:  # EOF check
-            break
-        if 'Output for configuration' in oneline:
-            snapshot = structure.create_snapshot(xtal.Snapshot)
-        if 'Final charges from ReaxFF' in oneline:
-            snapshot.atomlist = []
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            while True:
-                charges = outfile.readline().strip().split()
-                if charges[0][0] == '-':
-                    break
-                else:
-                    atom = snapshot.create_atom(xtal.Atom)
-                    atom.charge = float(charges[-1])
-    return structure
 
 
 
