@@ -315,28 +315,75 @@ def _read_elastic_moduli(outfilename):
     """
     outfile = open(outfilename,'r')
     moduli_array = []
+    moduli = np.zeros((6,6))
     while True:
         oneline = outfile.readline()
         if not oneline: # break at EOF
             break
-        if 'Elastic Constant Matrix' in oneline:
-            moduli = np.zeros((6,6))
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            dummyline = outfile.readline()
-            for i in range(6):
-                modline = outfile.readline().strip()
-                e1, e2, e3, e4, e5, e6 = modline[3:13], modline[13:23], modline[23:33], modline[33:43], modline[43:53], modline[53:63]
-                modarray = [e1,e2,e3,e4,e5,e6]
-                float_modarray = []
-                # Handle errors
-                for element in modarray:
-                    if element[0] == "*":
-                        float_modarray.append(0.0)
-                    else:
-                        float_modarray.append(float(element))
-                moduli[i,:] = float_modarray
+        if 'EZFF C11' in oneline:
+            moduli[0,0] = float(oneline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C22
+            moduli[1,1] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C33
+            moduli[2,2] = float(newline.strip().split()[2]) # in GPa
+
+            newline = outfile.readline() # C12
+            moduli[0,1] = float(newline.strip().split()[2]) # in GPa
+            moduli[1,0] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C13
+            moduli[0,2] = float(newline.strip().split()[2]) # in GPa
+            moduli[2,0] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C23
+            moduli[1,2] = float(newline.strip().split()[2]) # in GPa
+            moduli[2,1] = float(newline.strip().split()[2]) # in GPa
+
+            newline = outfile.readline() # C44
+            moduli[3,3] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C55
+            moduli[4,4] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C66
+            moduli[5,5] = float(newline.strip().split()[2]) # in GPa
+
+            newline = outfile.readline() # C14
+            moduli[0,3] = float(newline.strip().split()[2]) # in GPa
+            moduli[3,0] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C15
+            moduli[0,4] = float(newline.strip().split()[2]) # in GPa
+            moduli[4,0] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C16
+            moduli[0,5] = float(newline.strip().split()[2]) # in GPa
+            moduli[5,0] = float(newline.strip().split()[2]) # in GPa
+
+            newline = outfile.readline() # C24
+            moduli[1,3] = float(newline.strip().split()[2]) # in GPa
+            moduli[3,1] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C25
+            moduli[1,4] = float(newline.strip().split()[2]) # in GPa
+            moduli[4,1] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C26
+            moduli[1,5] = float(newline.strip().split()[2]) # in GPa
+            moduli[5,1] = float(newline.strip().split()[2]) # in GPa
+
+            newline = outfile.readline() # C34
+            moduli[2,3] = float(newline.strip().split()[2]) # in GPa
+            moduli[3,2] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C35
+            moduli[2,4] = float(newline.strip().split()[2]) # in GPa
+            moduli[4,2] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C36
+            moduli[2,5] = float(newline.strip().split()[2]) # in GPa
+            moduli[5,2] = float(newline.strip().split()[2]) # in GPa
+
+            newline = outfile.readline() # C45
+            moduli[3,4] = float(newline.strip().split()[2]) # in GPa
+            moduli[4,3] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C46
+            moduli[3,5] = float(newline.strip().split()[2]) # in GPa
+            moduli[5,3] = float(newline.strip().split()[2]) # in GPa
+            newline = outfile.readline() # C56
+            moduli[4,5] = float(newline.strip().split()[2]) # in GPa
+            moduli[5,4] = float(newline.strip().split()[2]) # in GPa
+
             moduli_array.append(moduli)
     outfile.close()
     return moduli_array
