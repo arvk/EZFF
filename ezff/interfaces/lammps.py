@@ -188,7 +188,7 @@ class job:
         script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
 
         ## Define a universal thermo style and dump information every step
-        script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz \n')
+        script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
         script.write('thermo 1000 \n')
 
         script.write('variable ezff_T equal temp \n')
@@ -206,12 +206,44 @@ class job:
         script.write('\n')
 
         # Write out the summary
-        script.write('write_dump all custom final.dump id type mass q x y z vx vy vz fx fy fz \n')
+        script.write('write_dump all custom final.dump id type element mass q x y z vx vy vz fx fy fz modify sort id element ' + ' '.join(opts['atom_sequence']).title() + ' \n')
 
         script.write('print "-----SUMMARY-----" \n')
         script.write('print "EZFF_TEMP ${ezff_T}" \n')
         script.write('print "EZFF_VOL ${ezff_V}" \n')
         script.write('print "EZFF_ENERGY ${ezff_E}" \n')
+
+        # SCRIPTS TO COMPUTE ELASTIC CONSTANT
+        # ADOPTED FROM THE ELASTIC EXAMPLE IN LAMMPS DIRECTORY
+        if opts['pbc']:
+            displace_script = open(os.path.join(os.path.abspath(self.path), 'displace.mod'), 'w')
+
+            displace_script.write('clear\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nif "${dir} == 1" then &\n   "variable len0 equal ${lx0}"\nif "${dir} == 2" then &\n   "variable len0 equal ${ly0}"\nif "${dir} == 3" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 4" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 5" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 6" then &\n   "variable len0 equal ${ly0}"\nbox tilt large\nread_restart restart.equil\n')
+
+            displace_script.write('pair_style ' + fftype_pairstyle[opts['fftype']] + '\n')
+            displace_script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
+            displace_script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
+            displace_script.write('thermo 1 \n')
+
+            displace_script.write('variable delta equal -${up}*${len0}\nvariable deltaxy equal -${up}*xy\nvariable deltaxz equal -${up}*xz\nvariable deltayz equal -${up}*yz\nif "${dir} == 1" then &\n   "change_box all x delta 0 ${delta} xy delta ${deltaxy} xz delta ${deltaxz} remap units box"\nif "${dir} == 2" then &\n   "change_box all y delta 0 ${delta} yz delta ${deltayz} remap units box"\nif "${dir} == 3" then &\n   "change_box all z delta 0 ${delta} remap units box"\nif "${dir} == 4" then &\n   "change_box all yz delta ${delta} remap units box"\nif "${dir} == 5" then &\n   "change_box all xz delta ${delta} remap units box"\nif "${dir} == 6" then &\n   "change_box all xy delta ${delta} remap units box"\nminimize 0.0 1.0e-8 1000 100000\nvariable tmp equal pxx\nvariable pxx1 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy1 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz1 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy1 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz1 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz1 equal ${tmp}\nvariable C1neg equal ${d1}\nvariable C2neg equal ${d2}\nvariable C3neg equal ${d3}\nvariable C4neg equal ${d4}\nvariable C5neg equal ${d5}\nvariable C6neg equal ${d6}\nclear\nbox tilt large\nread_restart restart.equil\n')
+
+            displace_script.write('pair_style ' + fftype_pairstyle[opts['fftype']] + '\n')
+            displace_script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
+            displace_script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
+            displace_script.write('thermo 1 \n')
+
+            displace_script.write('variable delta equal ${up}*${len0}\nvariable deltaxy equal ${up}*xy\nvariable deltaxz equal ${up}*xz\nvariable deltayz equal ${up}*yz\nif "${dir} == 1" then &\n   "change_box all x delta 0 ${delta} xy delta ${deltaxy} xz delta ${deltaxz} remap units box"\nif "${dir} == 2" then &\n   "change_box all y delta 0 ${delta} yz delta ${deltayz} remap units box"\nif "${dir} == 3" then &\n   "change_box all z delta 0 ${delta} remap units box"\nif "${dir} == 4" then &\n   "change_box all yz delta ${delta} remap units box"\nif "${dir} == 5" then &\n   "change_box all xz delta ${delta} remap units box"\nif "${dir} == 6" then &\n   "change_box all xy delta ${delta} remap units box"\nminimize 0.0 1.0e-8 1000 100000\nvariable tmp equal pe\nvariable e1 equal ${tmp}\nvariable tmp equal press\nvariable p1 equal ${tmp}\nvariable tmp equal pxx\nvariable pxx1 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy1 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz1 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy1 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz1 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz1 equal ${tmp}\nvariable C1pos equal ${d1}\nvariable C2pos equal ${d2}\nvariable C3pos equal ${d3}\nvariable C4pos equal ${d4}\nvariable C5pos equal ${d5}\nvariable C6pos equal ${d6}\nvariable C1${dir} equal 0.5*(${C1neg}+${C1pos})\nvariable C2${dir} equal 0.5*(${C2neg}+${C2pos})\nvariable C3${dir} equal 0.5*(${C3neg}+${C3pos})\nvariable C4${dir} equal 0.5*(${C4neg}+${C4pos})\nvariable C5${dir} equal 0.5*(${C5neg}+${C5pos})\nvariable C6${dir} equal 0.5*(${C6neg}+${C6pos})\nvariable dir delete\n')
+
+            displace_script.close()
+
+            script.write('\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nvariable tmp equal pxx\nvariable pxx0 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy0 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz0 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz0 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz0 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy0 equal ${tmp}\nvariable tmp equal lx\nvariable lx0 equal ${tmp}\nvariable tmp equal ly\nvariable ly0 equal ${tmp}\nvariable tmp equal lz\nvariable lz0 equal ${tmp}\n# These formulas define the derivatives w.r.t. strain components\n# Constants uses $, variables use v_\nvariable d1 equal -(v_pxx1-${pxx0})/(v_delta/v_len0)*${cfac}\nvariable d2 equal -(v_pyy1-${pyy0})/(v_delta/v_len0)*${cfac}\nvariable d3 equal -(v_pzz1-${pzz0})/(v_delta/v_len0)*${cfac}\nvariable d4 equal -(v_pyz1-${pyz0})/(v_delta/v_len0)*${cfac}\nvariable d5 equal -(v_pxz1-${pxz0})/(v_delta/v_len0)*${cfac}\nvariable d6 equal -(v_pxy1-${pxy0})/(v_delta/v_len0)*${cfac}\n')
+
+            if opts['relax_cell']:
+                script.write('unfix FixBoxRelax\n')
+            script.write('write_restart restart.equil\n')
+
+            script.write('variable dir equal 1\ninclude displace.mod\nvariable dir equal 2\ninclude displace.mod\nvariable dir equal 3\ninclude displace.mod\nvariable dir equal 4\ninclude displace.mod\nvariable dir equal 5\ninclude displace.mod\nvariable dir equal 6\ninclude displace.mod\nvariable C11all equal ${C11}\nvariable C22all equal ${C22}\nvariable C33all equal ${C33}\nvariable C12all equal 0.5*(${C12}+${C21})\nvariable C13all equal 0.5*(${C13}+${C31})\nvariable C23all equal 0.5*(${C23}+${C32})\nvariable C44all equal ${C44}\nvariable C55all equal ${C55}\nvariable C66all equal ${C66}\nvariable C14all equal 0.5*(${C14}+${C41})\nvariable C15all equal 0.5*(${C15}+${C51})\nvariable C16all equal 0.5*(${C16}+${C61})\nvariable C24all equal 0.5*(${C24}+${C42})\nvariable C25all equal 0.5*(${C25}+${C52})\nvariable C26all equal 0.5*(${C26}+${C62})\nvariable C34all equal 0.5*(${C34}+${C43})\nvariable C35all equal 0.5*(${C35}+${C53})\nvariable C36all equal 0.5*(${C36}+${C63})\nvariable C45all equal 0.5*(${C45}+${C54})\nvariable C46all equal 0.5*(${C46}+${C64})\nvariable C56all equal 0.5*(${C56}+${C65})\nvariable C11cubic equal (${C11all}+${C22all}+${C33all})/3.0\nvariable C12cubic equal (${C12all}+${C13all}+${C23all})/3.0\nvariable C44cubic equal (${C44all}+${C55all}+${C66all})/3.0\nvariable bulkmodulus equal (${C11cubic}+2*${C12cubic})/3.0\nvariable shearmodulus1 equal ${C44cubic}\nvariable shearmodulus2 equal (${C11cubic}-${C12cubic})/2.0\nvariable poissonratio equal 1.0/(1.0+${C11cubic}/${C12cubic})\nprint "EZFF C11 ${C11all} ${cunits}"\nprint "EZFF C22 ${C22all} ${cunits}"\nprint "EZFF C33 ${C33all} ${cunits}"\nprint "EZFF C12 ${C12all} ${cunits}"\nprint "EZFF C13 ${C13all} ${cunits}"\nprint "EZFF C23 ${C23all} ${cunits}"\nprint "EZFF C44 ${C44all} ${cunits}"\nprint "EZFF C55 ${C55all} ${cunits}"\nprint "EZFF C66 ${C66all} ${cunits}"\nprint "EZFF C14 ${C14all} ${cunits}"\nprint "EZFF C15 ${C15all} ${cunits}"\nprint "EZFF C16 ${C16all} ${cunits}"\nprint "EZFF C24 ${C24all} ${cunits}"\nprint "EZFF C25 ${C25all} ${cunits}"\nprint "EZFF C26 ${C26all} ${cunits}"\nprint "EZFF C34 ${C34all} ${cunits}"\nprint "EZFF C35 ${C35all} ${cunits}"\nprint "EZFF C36 ${C36all} ${cunits}"\nprint "EZFF C45 ${C45all} ${cunits}"\nprint "EZFF C46 ${C46all} ${cunits}"\nprint "EZFF C56 ${C56all} ${cunits}"\nprint "EZFF Bulk_Modulus ${bulkmodulus} ${cunits}"\nprint "EZFF Shear_Modulus_1 ${shearmodulus1} ${cunits}"\nprint "EZFF Shear_Modulus_2 ${shearmodulus2} ${cunits}"\nprint "EZFF Poisson_Ratio ${poissonratio}"\n')
+
 
         script.close()
 
@@ -322,9 +354,8 @@ def _read_energy(outfilename):
     energy_in_eV = []
     outfile = open(outfilename, 'r')
     for line in outfile:
-        if 'Total lattice energy' in line:
-            if line.strip().split()[-1] == 'eV':
-                energy_in_eV.append(float(line.strip().split()[-2]))
+        if 'EZFF_ENERGY' in line:
+            energy_in_eV.append(float(line.strip().split()[-1]))
     outfile.close()
     return np.array(energy_in_eV)
 
