@@ -279,14 +279,6 @@ class job:
         """
         return _read_elastic_moduli(self.outfile)
 
-    def read_phonon_dispersion(self, units='cm-1'):
-        """
-        Read phonon dispersion from a complete GULP job
-
-        :returns: 2D np.array containing the phonon dispersion in THz
-        """
-        return _read_phonon_dispersion(self.outfile+'.disp', units=units)
-
     def read_atomic_charges(self):
         """
         Read atomic charge information from a completed GULP job file
@@ -405,32 +397,6 @@ def _read_energy(outfilename):
             energy_in_eV.append(float(line.strip().split()[-1]))
     outfile.close()
     return np.array(energy_in_eV)
-
-
-
-def _read_phonon_dispersion(phonon_dispersion_file, units='cm-1'):
-    """
-    Read phonon dispersion from a complete GULP job
-
-    :param phonon_dispersion_file: Path of file containing phonon dispersion from the GULP job
-    :type phonon_dispersion_file: str
-    :returns: 2D np.array containing the phonon dispersion in THz
-    """
-    pbs = []
-    freq_conversion = {'cm-1': 0.0299792453684314, 'THz': 1, 'eV': 241.79893, 'meV': 0.24180}
-    dispersion = open(phonon_dispersion_file, 'r')
-    for line in dispersion:
-        if not line.strip().startswith('#'):
-            str_index, str_freq = line[:4], line[4:]
-            if not str_freq[0] == '*':
-                pbs.append(float(str_freq))
-            else:
-                pbs.append(0.0)
-    dispersion.close()
-    num_bands = int(len(pbs)/100)
-    pbs = np.array(pbs).reshape((100,num_bands)).T
-    pbs *= convert.frequency[units]['THz']
-    return pbs
 
 
 
