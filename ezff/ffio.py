@@ -53,7 +53,7 @@ def read_forcefield_template(template_filename):
 
 
 
-def generate_forcefield(template_string, parameters, FFtype = None, outfile = None):
+def generate_forcefield(template_string, parameters, FFtype = None, outfile = None, MD = 'GULP'):
     """Generate a new forcefield from the template by replacing variables with numerical values
 
     :param template_string: Text of the forcefield template
@@ -64,6 +64,12 @@ def generate_forcefield(template_string, parameters, FFtype = None, outfile = No
 
     :param FFtype: Type of forcefield being optimized. (e.g. reaxff, sw, lj, etc.)
     :type FFtype: string
+
+    :param outfile: Optional filename to write out the forcefield
+    :type outfile: string
+
+    :param MD: MD Engine used for parameterization
+    :type MD: string
     """
     replaced_keys = ''
     for key, ranges in parameters.items():
@@ -74,7 +80,10 @@ def generate_forcefield(template_string, parameters, FFtype = None, outfile = No
     # Special handling for certain forcefield types
     if FFtype is not None:
         if (FFtype.strip().upper() == 'REAX') or (FFtype.strip().upper() == 'REAXFF'):
-            template_string = reax_forcefield(filestring=template_string).write_gulp_library()
+            if MD == 'GULP':
+                template_string = reax_forcefield(filestring=template_string).write_gulp_library()
+            elif MD == 'LAMMPS':
+                template_string = reax_forcefield(filestring=template_string).write_formatted_forcefields()
 
     if outfile is not None:
         with open(outfile, 'w') as new_forcefield:

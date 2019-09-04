@@ -707,91 +707,79 @@ class reax_forcefield:
         return
 
 
-    def write_formatted_forcefields(self, outfilename):
+    def write_formatted_forcefields(self):
         """
         Function to write-out the current forcefield with correct ReaxFF formatting
 
         :param outfilename: File to which formatted forcefield to be written to
         :type outfilename: str
         """
+        string = self.header
 
-        with open(outfilename,'w') as outfile:
-            outfile.write(self.header)
+        # Write general parameters
+        for lineno, line in enumerate(self.general):
+            if lineno == 0:
+                string += ' %2d       %s\n' %(int(line[0]), ' '.join(line[1:]))
+            else:
+                string += '%10.4f %s\n' %(float(line[0]), ' '.join(line[1:]))
 
-            # Write general parameters
-            for lineno, line in enumerate(self.general):
-                string = ''
-                if lineno == 0:
-                    string = ' %2d       %s\n' %(int(line[0]), ' '.join(line[1:]))
-                else:
-                    string = '%10.4f %s\n' %(float(line[0]), ' '.join(line[1:]))
-                outfile.write(string)
+        # One-body term
+        for lineno, line in enumerate(self.onebody[:4]):
+            if lineno == 0:
+                string += '%3d    %s\n' %(int(line[0]), ' '.join(line[1:]))
+            else:
+                string += '            %s\n' %(' '.join(line))
 
-            # One-body term
-            for lineno, line in enumerate(self.onebody[:4]):
-                string = ''
-                if lineno == 0:
-                    string = '%3d    %s\n' %(int(line[0]), ' '.join(line[1:]))
-                else:
-                    string = '            %s\n' %(' '.join(line))
-                outfile.write(string)
+        for lineno, line in enumerate(self.onebody[4:]):
+            if lineno % 4 == 0:
+                string += ' %-2s' % line[0] + ''.join(['%9.4f' % float(val) for val in line[1:]]) + '\n'
+            else:
+                string += '   ' + ''.join(['%9.4f' % float(val) for val in line]) + '\n'
 
-            for lineno, line in enumerate(self.onebody[4:]):
-                string = ''
-                if lineno % 4 == 0:
-                    string = ' %-2s' % line[0] + ''.join(['%9.4f' % float(val) for val in line[1:]]) + '\n'
-                else:
-                    string = '   ' + ''.join(['%9.4f' % float(val) for val in line]) + '\n'
-                outfile.write(string)
+        # Two-body terms
+        for lineno, line in enumerate(self.twobody[:2]):
+            if lineno == 0:
+                string += '%3d      %s\n' %(int(line[0]), ' '.join(line[1:]))
+            else:
+                string += '            %s\n' %(' '.join(line))
 
-            # Two-body terms
-            for lineno, line in enumerate(self.twobody[:2]):
-                string = ''
-                if lineno == 0:
-                    string = '%3d      %s\n' %(int(line[0]), ' '.join(line[1:]))
-                else:
-                    string = '            %s\n' %(' '.join(line))
-                outfile.write(string)
+        for lineno, line in enumerate(self.twobody[2:]):
+            if lineno % 2 == 0:
+                string += '%3d' % int(line[0]) + '%3d' % int(line[1]) + ''.join(['%9.4f' % float(val) for val in line[2:]]) + '\n'
+            else:
+                string += '      ' + ''.join(['%9.4f' % float(val) for val in line]) + '\n'
 
-            for lineno, line in enumerate(self.twobody[2:]):
-                string = ''
-                if lineno % 2 == 0:
-                    string = '%3d' % int(line[0]) + '%3d' % int(line[1]) + ''.join(['%9.4f' % float(val) for val in line[2:]]) + '\n'
-                else:
-                    string = '      ' + ''.join(['%9.4f' % float(val) for val in line]) + '\n'
-                outfile.write(string)
+        # Off-diagonal
+        for lineno, line in enumerate(self.offdiagonal):
+            if lineno == 0:
+                string += '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
+            else:
+                string += '%3d' % int(line[0]) + '%3d' % int(line[1]) + ''.join(['%9.4f' % float(val) for val in line[2:]]) + '\n'
 
-            # Off-diagonal
-            for lineno, line in enumerate(self.offdiagonal):
-                if lineno == 0:
-                    string = '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
-                else:
-                    string = '%3d' % int(line[0]) + '%3d' % int(line[1]) + ''.join(['%9.4f' % float(val) for val in line[2:]]) + '\n'
-                outfile.write(string)
+        # Threebody
+        for lineno, line in enumerate(self.threebody):
+            if lineno == 0:
+                string += '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
+            else:
+                string += '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + ''.join(['%9.4f' % float(val) for val in line[3:]]) + '\n'
 
-            # Threebody
-            for lineno, line in enumerate(self.threebody):
-                if lineno == 0:
-                    string = '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
-                else:
-                    string = '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + ''.join(['%9.4f' % float(val) for val in line[3:]]) + '\n'
-                outfile.write(string)
+        # Fourbody
+        for lineno, line in enumerate(self.fourbody):
+            if lineno == 0:
+                string += '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
+            else:
+                string += '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + '%3d' % int(line[3]) + ''.join(['%9.4f' % float(val) for val in line[4:]])+ '\n'
 
-            # Fourbody
-            for lineno, line in enumerate(self.fourbody):
-                if lineno == 0:
-                    string = '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
-                else:
-                    string = '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + '%3d' % int(line[3]) + ''.join(['%9.4f' % float(val) for val in line[4:]]) + '\n'
-                outfile.write(string)
 
-            # Hbond
-            for lineno, line in enumerate(self.hbond):
-                if lineno == 0:
-                    string = '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
-                else:
-                    string = '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + ''.join(['%9.4f' % float(val) for val in line[3:]]) + '\n'
-                outfile.write(string)
+        # Hbond
+        for lineno, line in enumerate(self.hbond):
+            if lineno == 0:
+                string += '%3d    ' % int(line[0]) + ' '.join(line[1:]) + '\n'
+            else:
+                string += '%3d' % int(line[0]) + '%3d' % int(line[1]) + '%3d' % int(line[2]) + ''.join(['%9.4f' % float(val) for val in line[3:]]) + '\n'
+
+        return string
+
 
 
     def write_gulp_library(self, outfilename = None):
