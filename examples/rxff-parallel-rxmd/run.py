@@ -1,5 +1,3 @@
-import sys
-sys.path.append('../../')
 import ezff
 from ezff.interfaces import rxmd, qchem
 from ezff.utils.reaxff import reax_forcefield
@@ -13,8 +11,6 @@ gt_freq_scan_energy = qchem.read_energy('ground_truths/frequency_length_scan/CHO
 gt_full_scan = qchem.read_structure(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
 gt_full_scan_energy = qchem.read_energy(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
 
-executable = '/auto/hpc-23/ankitmis/work/myapps/test/EZFF/examples/rxff-parallel/rxmd'
-
 def my_error_function(rr):
     # Get a unique path for GULP jobs from the MPI rank. Set to '0' for serial jobs
     try:
@@ -27,7 +23,7 @@ def my_error_function(rr):
     md_gs_job.structure = gt_gs
     md_gs_job.forcefield = ezff.generate_forcefield(template, rr, FFtype = 'reaxff2', outfile = md_gs_job.path+'/ffield')
     # Run rxmd calculation
-    md_gs_job.run(command=executable)
+    md_gs_job.run(command='rxmd')
     # Read output from completed GULP job and clean-up
     md_gs_energy = md_gs_job.read_energy()
     md_gs_job.cleanup()
@@ -37,7 +33,7 @@ def my_error_function(rr):
     md_freq_scan_job.structure = gt_freq_scan
     md_freq_scan_job.forcefield = ezff.generate_forcefield(template, rr, FFtype = 'reaxff2', outfile = md_freq_scan_job.path+'/ffield')
     # Run RXMD calculation
-    md_freq_scan_job.run(command=executable)
+    md_freq_scan_job.run(command='rxmd')
     # Read output from completed RXMD job and clean-up
     md_freq_scan_energy = md_freq_scan_job.read_energy()
     md_freq_scan_job.cleanup()
@@ -47,7 +43,7 @@ def my_error_function(rr):
     md_full_scan_job.structure = gt_full_scan
     md_full_scan_job.forcefield = ezff.generate_forcefield(template, rr, FFtype = 'reaxff2', outfile = md_full_scan_job.path+'/ffield')
     # Run RXMD calculation
-    md_full_scan_job.run(command=executable)
+    md_full_scan_job.run(command='rxmd')
     # Read output from completed RXMD job and clean-up
     md_full_scan_energy = md_full_scan_job.read_energy()
     #md_full_scan_job.cleanup()
