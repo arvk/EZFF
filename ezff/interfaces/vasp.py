@@ -6,7 +6,7 @@ import xtal
 
 def read_atomic_structure(structure_file):
     """
-    Read-in atomic structure. Currently only VASP POSCAR/CONTCAR files are supported
+    Read-in atomic structure. Currently VASP POSCAR/CONTCAR/XDATCAR and vasprun.xml files are supported
 
     :param structure_file: Filename of the atomic structure file
     :type structure_file: str
@@ -14,10 +14,32 @@ def read_atomic_structure(structure_file):
     """
     structure = xtal.AtTraj(verbose=False)
 
-    if ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
+    if ('xml' in structure_file) or ('XDATCAR' in structure_file):
+        structure.read_trajectory_vasp(structure_file)
+    elif ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
         structure.read_snapshot_vasp(structure_file)
 
     return structure
+
+
+
+def read_energy(xml_file):
+    """
+    Read-in energy from a VASP trajectory. Currently only vasprun.xml files are supported
+
+    :param xml_file: Filename of the atomic structure file
+    :type xml_file: str
+    :returns: xtal trajectory with the structure in the first snapshot
+    """
+    structure = xtal.AtTraj(verbose=False)
+
+    if ('xml' in xml_file):
+        structure.read_trajectory_vasp(xml_file)
+
+    energies = [snapshot.energy for snapshot in structure.snaplist]
+
+    return np.array(energies)
+
 
 
 
