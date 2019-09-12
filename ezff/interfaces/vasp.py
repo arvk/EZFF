@@ -1,12 +1,12 @@
 """Interface to VASP, the Vienna Ab initio Simulation Package"""
 import numpy as np
 import xtal
-
+import os
 
 
 def read_atomic_structure(structure_file):
     """
-    Read-in atomic structure. Currently VASP POSCAR/CONTCAR/XDATCAR and vasprun.xml files are supported
+    Read-in atomic structure. Currently VASP POSCAR/CONTCAR/XDATCAR and vasprun.xml files (or directory containing vasprun.xml files) are supported
 
     :param structure_file: Filename of the atomic structure file
     :type structure_file: str
@@ -14,7 +14,7 @@ def read_atomic_structure(structure_file):
     """
     structure = xtal.AtTraj(verbose=False)
 
-    if ('xml' in structure_file) or ('XDATCAR' in structure_file):
+    if ('xml' in structure_file) or ('XDATCAR' in structure_file) or (os.path.isdir(structure_file)):
         structure.read_trajectory_vasp(structure_file)
     elif ('POSCAR' in structure_file) or ('CONTCAR' in structure_file):
         structure.read_snapshot_vasp(structure_file)
