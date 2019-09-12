@@ -3,6 +3,7 @@ import os
 import xtal
 import numpy as np
 import ezff
+from ezff.ffio import generate_forcefield as gen_ff
 from ezff.utils import convert_units as convert
 import distutils
 from distutils import spawn
@@ -44,6 +45,11 @@ class job:
         if verbose:
             print('Created a new GULP job')
 
+
+    def generate_forcefield(self, template_string, parameters, FFtype = None, outfile = None):
+        self.options['fftype'] = FFtype.upper()
+        forcefield = gen_ff(template_string, parameters, FFtype = FFtype, outfile = outfile, MD = 'GULP')
+        return forcefield
 
 
     def run(self, command = None, timeout = None):
