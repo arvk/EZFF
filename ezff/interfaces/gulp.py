@@ -94,10 +94,10 @@ class job:
         if opts['relax_atoms']:
             header_line += 'optimise '
 
-            if opts['relax_cell']:
-                header_line += 'conp '
-            else:
-                header_line += 'conv '
+        if opts['relax_cell']:
+            header_line += 'conp '
+        else:
+            header_line += 'conv '
 
         if header_line == '':
             header_line = 'gradient '
