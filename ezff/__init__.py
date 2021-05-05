@@ -36,7 +36,7 @@ class OptProblem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
     """
-    def __init__(self, num_errors=None, error_function=None, variable_bounds=None, template=None):
+    def __init__(self, num_errors=None, error_names=None, error_function=None, variable_bounds=None, template=None):
         """
         :param num_errors: Number of errors to be minimized for forcefield optimization
         :type num_errors: int
@@ -62,6 +62,10 @@ class OptProblem(Problem):
         self.directions = [Problem.MINIMIZE for error in range(num_errors)]
         self.variables = variables
         self.template = template
+        if error_names is None:
+            self.error_names = ['Error_'+str(i+1) for i in range(num_errors)]
+        else:
+            self.error_names = error_names
 
 
 
@@ -133,10 +137,14 @@ def optimize(problem, algorithm, iterations=100, write_forcefields=None):
             objfilename = outdir + '/errors'
             varfile = open(varfilename, 'w')
             objfile = open(objfilename, 'w')
+            varfile.write(','.join([str(variables) for variables in problem.variables]))
+            varfile.write('\n')
+            objfile.write(','.join([str(error_name) for error_name in problem.error_names]))
+            objfile.write('\n')
             for solution in unique(nondominated(algorithm_for_this_stage.result)):
-                varfile.write(' '.join([str(variables) for variables in solution.variables]))
+                varfile.write(','.join([str(variables) for variables in solution.variables]))
                 varfile.write('\n')
-                objfile.write(' '.join([str(objective) for objective in solution.objectives]))
+                objfile.write(','.join([str(objective) for objective in solution.objectives]))
                 objfile.write('\n')
             varfile.close()
             objfile.close()
