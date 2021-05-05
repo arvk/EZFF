@@ -71,9 +71,44 @@ class job:
             else:
                 print('No GULP executable specified or located')
 
-        self._write_script_file()
+        # Purge all master output files
+        os.system('rm -f ' + self.outfile)
+        os.system('rm -f ' + self.outfile + '.disp')
+        os.system('rm -f ' + self.outfile + '.dens')
+        os.system('rm -f ' + self.outfile + '.frc')
+        os.system('rm -f ' + self.outfile + '.runerror')
 
-        system_call_command = command + ' < ' + self.scriptfile + ' > ' + self.outfile + ' 2> ' + self.outfile + '.runerror'
+        # Touch all partial output files
+        os.system('touch ' + self.outfile + '.partial')
+        os.system('touch ' + self.outfile + '.disp.partial')
+        os.system('touch ' + self.outfile + '.dens.partial')
+        os.system('touch ' + self.outfile + '.frc.partial')
+        os.system('touch ' + self.outfile + '.runerror.partial')
+
+        for snapID in range(len(self.structure.snaplist)):
+            self._write_script_file(snapID)
+            self._execute_script_file(command=command)
+
+            # Collate partial outputs into total output files
+            os.system('cat ' + self.outfile + '.partial >> ' + self.outfile) # Concat master outfile
+            os.system('cat ' + self.outfile + '.disp.partial >> ' + self.outfile +'.disp') # Concat master dispfile
+            os.system('cat ' + self.outfile + '.dens.partial >> ' + self.outfile +'.dens') # Concat master densfile
+            os.system('cat ' + self.outfile + '.frc.partial >> ' + self.outfile +'.frc') # Concat master densfile
+            os.system('cat ' + self.outfile + '.runerror.partial >> ' + self.outfile +'.runerror') # Concat master standard error
+
+
+    def _execute_script_file(self, command = None, timeout = None):
+        """
+        Execute GULP job with user-defined parameters
+
+        :param command: path to GULP executable
+        :type command: str
+
+        :param timeout: GULP job is automatically killed after ``timeout`` seconds
+        :type timeout: int
+        """
+
+        system_call_command = command + ' < ' + self.scriptfile + ' > ' + self.outfile + '.partial 2> ' + self.outfile + '.runerror.partial'
 
         if timeout is not None:
             system_call_command = 'timeout ' + str(timeout) + ' ' + system_call_command
@@ -84,7 +119,7 @@ class job:
 
 
 
-    def _write_script_file(self):
+    def _write_script_file(self, snapID):
         """
         Write-out a complete GULP script file, ``job.scriptfile``, based on job parameters
         """
@@ -120,26 +155,25 @@ class job:
         script.write('\n')
         script.write('\n')
 
+        snapshot = self.structure.snaplist[snapID]
         if opts['pbc']:
-            for snapshot in self.structure.snaplist:
-                script.write('vectors\n')
-                script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
-                script.write('Fractional\n')
-                for atom in snapshot.atomlist:
-                    positions = atom.element.title() + ' core '
-                    positions += np.array_str(atom.fract).replace('[','').replace(']','')
-                    positions += ' 0.0   1.0   0.0   1 1 1 \n'
-                    script.write(positions)
-                script.write('\n\n\n')
+            script.write('vectors\n')
+            script.write(np.array_str(self.structure.box).replace('[','').replace(']','') + '\n')
+            script.write('Fractional\n')
+            for atom in snapshot.atomlist:
+                positions = atom.element.title() + ' core '
+                positions += np.array_str(atom.fract).replace('[','').replace(']','')
+                positions += ' 0.0   1.0   0.0   1 1 1 \n'
+                script.write(positions)
+            script.write('\n\n\n')
         else:
-            for snapshot in self.structure.snaplist:
-                script.write('Cartesian\n')
-                for atom in snapshot.atomlist:
-                    positions = atom.element.title() + ' core '
-                    positions += np.array_str(atom.cart).replace('[','').replace(']','')
-                    positions += ' 0.0   1.0   0.0   1 1 1 \n'
-                    script.write(positions)
-                script.write('\n\n\n')
+            script.write('Cartesian\n')
+            for atom in snapshot.atomlist:
+                positions = atom.element.title() + ' core '
+                positions += np.array_str(atom.cart).replace('[','').replace(']','')
+                positions += ' 0.0   1.0   0.0   1 1 1 \n'
+                script.write(positions)
+            script.write('\n\n\n')
         script.write('\n')
 
 
@@ -147,7 +181,7 @@ class job:
             if opts['phonon_dispersion_to'] is not None:
                 script.write('dispersion 1 100 \n')
                 script.write(opts['phonon_dispersion_from'] + ' to ' + opts['phonon_dispersion_to']+'\n')
-                script.write('output phonon ' + os.path.basename(self.outfile + '.disp'))
+                script.write('output phonon ' + os.path.basename(self.outfile + '.disp.partial'))
                 script.write('\n')
 
         script.write('\n')
@@ -212,7 +246,7 @@ class job:
 
         :returns: xtal.AtTraj object with optimized charge information
         """
-        return _read_atomic_forces(self.outfile+'.frc.partial')
+        return _read_atomic_forces(self.outfile+'.frc')
 
     def read_structure(self):
         """

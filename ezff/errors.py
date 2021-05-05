@@ -170,10 +170,6 @@ def error_atomic_forces(MD=None, GT=None):
     for snapID in range(len(GT.snaplist)):
         GT_forces = np.array([atom.force for atom in GT.snaplist[snapID].atomlist])
         MD_forces = np.array([atom.force for atom in MD.snaplist[snapID].atomlist])
-        print('GT FORCES')
-        print(GT_forces)
-        print('MD FORCES')
-        print(MD_forces)
         error_this_snapshot = np.linalg.norm(GT_forces - MD_forces)
         error_array.append(error_this_snapshot)
 
