@@ -6,14 +6,29 @@ import numpy as np
 from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
 from platypus.types import Real, Integer
 from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
-try:
-    from platypus.mpipool import MPIPool
-except ImportError:
-    pass
 from .ffio import *
 from .errors import *
 
 __version__ = '0.9.4' # Update setup.py if version changes
+
+# Import MPI Pool if you can
+# Expose the ezff.Pool class if MPI is installed and configured correctly
+try:
+    from platypus.mpipool import MPIPool
+
+    class Pool(MPIPool):
+        """
+        Wrapper for platypus.MPIPool
+
+        :param MPIPool: MPI Pool
+        :type MPIPool: MPIPool
+        """
+        def __init__(self, comm=None, debug=False, loadbalance=False):
+            super(Pool, self).__init__(comm=comm, debug=debug, loadbalance=loadbalance)
+
+except ImportError: # If MPI is not available, just skip it and don't expose the Pool class
+    pass
+
 
 
 
@@ -60,17 +75,6 @@ class OptProblem(Problem):
         current_var_dict = dict(zip(self.variables, solution.variables))
         solution.objectives[:] = self.error_function(current_var_dict)
 
-
-
-class Pool(MPIPool):
-    """
-    Wrapper for platypus.MPIPool
-
-    :param MPIPool: MPI Pool
-    :type MPIPool: MPIPool
-    """
-    def __init__(self, comm=None, debug=False, loadbalance=False):
-        super(Pool, self).__init__(comm=comm, debug=debug, loadbalance=loadbalance)
 
 
 
