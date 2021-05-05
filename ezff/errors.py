@@ -148,6 +148,38 @@ def error_atomic_charges(MD=None, GT=None):
     return np.sum(error_array)
 
 
+def error_atomic_forces(MD=None, GT=None):
+    """
+    Calculate error due to difference between MD-computed atomic forces and ground-truth atomic forces
+
+    :param MD: Relaxed structure after MD run
+    :type MD: xtal.AtTraj object
+
+    :param GT: Initial Ground-Truth structure used as input for MD calculations
+    :type GT: xtal.AtTraj object
+    """
+    # Sanity checks -- Both inputs should be AtTraj objects
+    if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
+        print('ERROR_ATOMIC_FORCES: Please provide xtal.AtTraj objects for comparison')
+        return
+
+    if not (len(GT.snaplist) == len(MD.snaplist)):
+        print('Different number of structures in MD and Ground-Truth data')
+
+    error_array = []
+    for snapID in range(len(GT.snaplist)):
+        GT_forces = np.array([atom.force for atom in GT.snaplist[snapID].atomlist])
+        MD_forces = np.array([atom.force for atom in MD.snaplist[snapID].atomlist])
+        print('GT FORCES')
+        print(GT_forces)
+        print('MD FORCES')
+        print(MD_forces)
+        error_this_snapshot = np.linalg.norm(GT_forces - MD_forces)
+        error_array.append(error_this_snapshot)
+
+    return np.sum(error_array)
+
+
 
 def error_energy(MD, GT, weights='uniform', verbose=False):
     """

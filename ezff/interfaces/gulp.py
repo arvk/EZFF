@@ -152,6 +152,10 @@ class job:
 
         script.write('\n')
 
+        ## Write additional file for forces
+        script.write('output frc ' + os.path.basename(self.outfile + '.frc.partial'))
+        script.write('\n')
+
         script.close()
 
 
@@ -201,6 +205,14 @@ class job:
         :returns: xtal.AtTraj object with optimized charge information
         """
         return _read_atomic_charges(self.outfile)
+
+    def read_atomic_forces(self):
+        """
+        Read atomic force information from a completed GULP job file
+
+        :returns: xtal.AtTraj object with optimized charge information
+        """
+        return _read_atomic_forces(self.outfile+'.frc.partial')
 
     def read_structure(self):
         """
@@ -327,6 +339,36 @@ def _read_atomic_charges(outfilename):
                     atom = snapshot.create_atom(xtal.Atom)
                     atom.charge = float(charges[-1])
     return structure
+
+
+
+def _read_atomic_forces(outfilename):
+    """
+    Read atomic force information from a completed GULP job
+
+    :param outfilename: Filename of the GULP *.frc output file
+    :type outfilename: str
+    :returns: xtal object (snapshot/trajectory) with force information
+    """
+    structure = xtal.AtTraj()
+    structure.box = np.zeros((3,3))
+    outfile = open(outfilename, 'r')
+
+    while True:
+        oneline = outfile.readline()
+        if not oneline:  # EOF check
+            break
+        if 'gradients cartesian' in oneline:
+            numatoms = int(oneline.strip().split()[-1])
+            snapshot = structure.create_snapshot(xtal.Snapshot)
+            snapshot.atomlist = []
+            for atomid in range(numatoms):
+                force_in = np.array([float(x) for x in outfile.readline().strip().split()[-3:]])
+                atom = snapshot.create_atom(xtal.Atom)
+                atom.force = force_in
+    return structure
+
+
 
 
 
