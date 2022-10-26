@@ -3,9 +3,13 @@ import os
 import sys
 import xtal
 import numpy as np
-from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
+import platypus
+from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator, Solution
 from platypus.types import Real, Integer
-from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
+from platypus.operators import InjectedPopulation, GAOperator, SBX, PM, TournamentSelector, RandomGenerator
+from platypus.config import default_variator
+
+
 try:
     from platypus.mpipool import MPIPool
 except ImportError:
@@ -17,11 +21,125 @@ __version__ = '0.9.4' # Update setup.py if version changes
 
 
 
+
+
+class Challenge():
+    def __init__(self, num_errors=None, error_function=None, variable_bounds=None, template=None, solver=None, population_size=None):
+        """
+        :param num_errors: Number of errors to be minimized for forcefield optimization
+        :type num_errors: int
+
+        :param error_function: User-defined function that takes-in a dictionary of variable-value pairs and outputs a list of computed errors
+        :type error_function: function
+
+        :param variable_bounds: Dictionary of bounds for decision variables in the format `variable: [lower_bound upper_bound]`
+        :type variable_bounds: dict
+
+        :param template: Forcefield template
+        :type template: str
+        """
+        self.num_errors = num_errors
+        self.error_function = error_function
+        self.variable_bounds = variable_bounds
+        self.variables = [key for key in variable_bounds.keys()]
+        #self.variables = variables
+        self.template = template
+        self.solver = solver.strip().upper()
+        self.population_size = population_size
+
+        self.working_variables = []
+        self.working_objectives = []
+        self.archive_variables = []
+        self.archive_objectives = []
+        self.unevaluated_variables = []
+
+        self.initialize_platypus()
+
+
+    def initialize_platypus(self):
+        # Initialization for Platypus-Opt Solvers
+        if self.solver in ['NSGAII','NSGAIII']:
+            self.problem = platypus.Problem(len(self.variables), self.num_errors)
+            self.directions = [platypus.Problem.MINIMIZE for error in range(self.num_errors)]
+            self.working_population = []
+
+            self.problem.types = [0 for i in range(len(self.variables))]
+            for counter, value in enumerate(self.variables):
+                if value[0] == '_':
+                    self.problem.types[counter] = Integer(self.variable_bounds[value][0], self.variable_bounds[value][1])
+                else:
+                    self.problem.types[counter] = Real(self.variable_bounds[value][0], self.variable_bounds[value][1])
+
+        if self.solver == 'NSGAII':
+            self.algorithm = platypus.NSGAII(self.problem, self.population_size)
+            self.algorithm.variator = platypus.config.default_variator(self.problem)
+
+
+    def gen_random_population(self, num_initial_samples = None):
+        print('GENERATING RANDOM VARIABLES')
+        toreturn = []
+        if num_initial_samples is None:
+            num_initial_samples = self.population_size
+
+        for i in range(num_initial_samples):
+            random_config = [np.random.uniform(self.variable_bounds[self.variables[i]][0], self.variable_bounds[self.variables[i]][1]) for i in range(len(self.variables))]
+            toreturn.append(random_config)
+
+        return toreturn
+
+
+    def evaluate_all_unevaluated(self):
+        if len(self.unevaluated_variables) < self.population_size:
+            self.unevaluated_variables.extend(self.gen_random_population(self.population_size - len(self.unevaluated_variables)))
+
+        for point in self.unevaluated_variables:
+            point_dict = dict(zip(self.variables, point))
+            evaluated_point = self.error_function(point_dict)
+            self.working_variables.append(point)
+            self.working_objectives.append(evaluated_point)
+            self.archive_variables.append(point)
+            self.archive_objectives.append(evaluated_point)
+
+
+
+    def gen_new_samples(self, num_new_samples = None):
+        if num_new_samples is None:
+            num_new_samples = self.population_size
+
+        if self.solver == 'NSGAII':
+            for i in range(len(self.working_variables)):
+                mysol = platypus.Solution(self.problem)
+                mysol.variables = self.working_variables[i]
+                mysol.objectives = self.working_objectives[i]
+                self.working_population.append(mysol)
+
+            platypus.core.nondominated_sort(self.working_population)
+            self.working_population = platypus.core.nondominated_truncate(self.working_population, self.population_size)
+
+            self.working_variables = []
+            self.working_objectives = []
+            for point in self.working_population:
+                self.working_variables.append(point.variables)
+                self.working_objectives.append(point.objectives)
+
+            offspring = []
+            while len(offspring) < self.population_size:
+                parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.working_population)
+                offspring.extend(self.algorithm.variator.evolve(parents))
+
+            new_samples = []
+            for single_offspring in offspring:
+                new_samples.append(single_offspring.variables)
+
+            return new_samples
+
+
+
 class OptProblem(Problem):
     """
     Class for Forcefield optimization problem. Derived from the generic Platypus Problem class for optimization problems
     """
-    def __init__(self, num_errors=None, error_function=None, variable_bounds=None, template=None):
+    def __init__(self, num_errors=None, error_function=None, variable_bounds=None, template=None, solver=None, population_size=None):
         """
         :param num_errors: Number of errors to be minimized for forcefield optimization
         :type num_errors: int
@@ -45,8 +163,27 @@ class OptProblem(Problem):
 
         self.error_function = error_function
         self.directions = [Problem.MINIMIZE for error in range(num_errors)]
+        self.variable_bounds = variable_bounds
         self.variables = variables
         self.template = template
+        self.solver = solver
+        self.population_size = population_size
+
+        self.working_variables = []
+        self.working_objectives = []
+        self.archive_variables = []
+        self.archive_objectives = []
+
+
+
+    def gen_init_population(self, num_initial_samples = None):
+        if num_initial_samples is None:
+            num_initial_samples = self.population_size
+
+        for i in range(num_initial_samples):
+            random_config = [np.random.uniform(self.variable_bounds[self.variables[i]][0], self.variable_bounds[self.variables[i]][1]) for i in range(len(self.variables))]
+            self.working_variables.append(random_config)
+
 
 
 
@@ -59,6 +196,44 @@ class OptProblem(Problem):
         """
         current_var_dict = dict(zip(self.variables, solution.variables))
         solution.objectives[:] = self.error_function(current_var_dict)
+
+
+
+
+class myN2(NSGAII):
+
+    def __init__(self, problem,
+                 population_size = 300,
+                 generator = RandomGenerator(),
+                 selector = TournamentSelector(2),
+                 variator = None,
+                 archive = None,
+                 **kwargs):
+        super(myN2, self).__init__(problem, population_size, generator, **kwargs)
+        self.selector = selector
+        self.variator = default_variator(problem)
+        self.archive = archive
+        self.population_size = population_size
+
+    def gen_start_pop_default(self):
+        self.population = [self.generator.generate(self.problem) for _ in range(self.population_size)]
+
+    def gen_start_pop_dictonly(self):
+        self.population = [self.generator.generate(self.problem).variables for _ in range(self.population_size)]
+
+    def gen_start_pop_fromdict(self):
+        self.population = []
+        varonly = [self.generator.generate(self.problem).variables for _ in range(self.population_size)]
+        for var in varonly:
+            mysol = Solution(self.problem)
+            mysol.variables = var
+            self.population.append(mysol)
+
+    measured_variables = []
+    measured_objectives = []
+    all_measured_variables = []
+    all_measured_objectives = []
+
 
 
 
