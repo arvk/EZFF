@@ -23,6 +23,27 @@ __version__ = '0.9.4' # Update setup.py if version changes
 
 
 
+
+class myIBEA(IBEA):
+    def __init__(self, problem, population_size = 100):
+        super(myIBEA, self).__init__(problem, population_size)
+
+    def _find_worst(self, population):
+        index = 0
+        for i in range(1, len(population)):
+            if self.fitness_comparator.compare(population[index], population[i]) < 0:
+                index = i
+
+        return index
+
+
+
+
+
+
+
+
+
 class Challenge():
     def __init__(self, num_errors=None, error_function=None, variable_bounds=None, template=None, solver=None, population_size=None):
         """
@@ -58,7 +79,7 @@ class Challenge():
 
     def initialize_platypus(self):
         # Initialization for Platypus-Opt Solvers
-        if self.solver in ['NSGAII','NSGAIII']:
+        if self.solver in ['NSGAII','IBEA']:
             self.problem = platypus.Problem(len(self.variables), self.num_errors)
             self.directions = [platypus.Problem.MINIMIZE for error in range(self.num_errors)]
             self.working_population = []
@@ -72,6 +93,10 @@ class Challenge():
 
         if self.solver == 'NSGAII':
             self.algorithm = platypus.NSGAII(self.problem, self.population_size)
+            self.algorithm.variator = platypus.config.default_variator(self.problem)
+
+        if self.solver == 'IBEA':
+            self.algorithm = myIBEA(self.problem, self.population_size)
             self.algorithm.variator = platypus.config.default_variator(self.problem)
 
 
@@ -133,6 +158,29 @@ class Challenge():
 
             return new_samples
 
+        if self.solver == 'IBEA':
+            for i in range(len(self.working_variables)):
+                mysol = platypus.Solution(self.problem)
+                mysol.variables = self.working_variables[i]
+                mysol.objectives = self.working_objectives[i]
+                self.working_population.append(mysol)
+
+            self.algorithm.fitness_evaluator.evaluate(self.working_population)
+
+            while len(self.working_population) > self.population_size:
+                self.algorithm.fitness_evaluator.remove(self.working_population, self.algorithm._find_worst(self.working_population))
+                print('removing 1 or 2')
+
+            offspring = []
+            while len(offspring) < self.population_size:
+                parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.working_population)
+                offspring.extend(self.algorithm.variator.evolve(parents))
+
+            new_samples = []
+            for single_offspring in offspring:
+                new_samples.append(single_offspring.variables)
+
+            return new_samples
 
 
 class OptProblem(Problem):
