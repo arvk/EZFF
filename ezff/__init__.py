@@ -4,6 +4,7 @@ import sys
 import xtal
 import numpy as np
 import platypus
+import mobopt
 #from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator, Solution
 #from platypus.types import Real, Integer
 #from platypus.operators import InjectedPopulation, GAOperator, SBX, PM, TournamentSelector, RandomGenerator
@@ -52,6 +53,7 @@ class Challenge():
         self.unevaluated_variables = []
 
         self.initialize_platypus()
+        self.initialize_mobo()
 
 
     def initialize_platypus(self):
@@ -76,6 +78,13 @@ class Challenge():
             self.algorithm = myIBEA(self.problem, self.population_size)
             self.algorithm.variator = platypus.config.default_variator(self.problem)
 
+    def initialize_mobo(self):
+        if self.solver == 'MOBO':
+            pbounds = []
+            for key in self.variable_bounds.keys():
+                pbounds.append(self.variable_bounds[key])
+            pbounds = np.array(pbounds)
+            self.algorithm = myMOBO(target = self.error_function, NObj = self.num_errors, pbounds = pbounds)
 
     def gen_random_population(self, num_initial_samples = None):
         print('GENERATING RANDOM VARIABLES')
@@ -158,6 +167,56 @@ class Challenge():
                 new_samples.append(single_offspring.variables)
 
             return new_samples
+
+
+        if self.solver == 'MOBO':
+            q = 0.5
+            prob = 0.1
+
+            for pointID in range(len(self.working_variables)):
+                self.algorithm.space.add_observation(np.array(self.working_variables[pointID]), np.array(self.working_objectives[pointID]))
+
+            for i in range(self.algorithm.NObj):
+                yy = self.algorithm.space.f[:, i]
+                self.algorithm.GP[i].fit(self.algorithm.space.x, yy)
+
+            pop, logbook, front = mobopt._NSGA2.NSGAII(self.algorithm.NObj,
+                                         self.algorithm._MOBayesianOpt__ObjectiveGP,
+                                         self.algorithm.pbounds,
+                                         MU=self.population_size*2)
+
+            Population = np.asarray(pop)
+            IndexF, FatorF = self.algorithm._MOBayesianOpt__LargestOfLeast(front, self.algorithm.space.f)
+            IndexPop, FatorPop = self.algorithm._MOBayesianOpt__LargestOfLeast(Population,
+                                                       self.algorithm.space.x)
+
+            Fator = q * FatorF + (1-q) * FatorPop
+
+            sorted_ids = np.argsort(Fator)
+
+            unevaluated = []
+
+            for i in range(self.population_size):
+
+                Index_try = int(np.argwhere(sorted_ids == np.max(sorted_ids)-i))
+
+                self.algorithm.x_try = Population[Index_try]
+
+                if self.algorithm.space.RS.uniform() < prob:
+
+                    if self.algorithm.NParam > 1:
+                        ii = self.algorithm.space.RS.randint(low=0, high=self.algorithm.NParam - 1)
+                    else:
+                        ii = 0
+
+                    self.algorithm.x_try[ii] = self.algorithm.space.RS.uniform(
+                        low=self.algorithm.pbounds[ii][0],
+                        high=self.algorithm.pbounds[ii][1])
+
+                unevaluated.append(self.algorithm.x_try)
+
+            return unevaluated
+
 
 
 # class OptProblem(Problem):
