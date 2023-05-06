@@ -58,7 +58,7 @@ class Challenge():
 
     def initialize_platypus(self):
         # Initialization for Platypus-Opt Solvers
-        if self.solver in ['NSGAII','IBEA']:
+        if self.solver in ['NSGAII','IBEA','NSGAIII']:
             self.problem = platypus.Problem(len(self.variables), self.num_errors)
             self.directions = [platypus.Problem.MINIMIZE for error in range(self.num_errors)]
             self.working_population = []
@@ -77,6 +77,15 @@ class Challenge():
         if self.solver == 'IBEA':
             self.algorithm = myIBEA(self.problem, self.population_size)
             self.algorithm.variator = platypus.config.default_variator(self.problem)
+
+        if self.solver == 'NSGAIII':
+            divisions = int(np.power(self.population_size * np.math.factorial(self.num_errors-1), 1.0/(self.num_errors-1))) + 2 - self.num_errors
+            divisions = np.maximum(1, divisions)
+            print('Population size set to ', divisions)
+            self.population_size = divisions
+            self.algorithm = platypus.NSGAIII(self.problem, self.population_size)
+            self.algorithm.variator = platypus.config.default_variator(self.problem)
+
 
     def initialize_mobo(self):
         if self.solver == 'MOBO':
@@ -143,6 +152,35 @@ class Challenge():
                 new_samples.append(single_offspring.variables)
 
             return new_samples
+
+
+        if self.solver == 'NSGAIII':
+            for i in range(len(self.working_variables)):
+                mysol = platypus.Solution(self.problem)
+                mysol.variables = self.working_variables[i]
+                mysol.objectives = self.working_objectives[i]
+                self.working_population.append(mysol)
+
+            platypus.core.nondominated_sort(self.working_population)
+            self.working_population = self.algorithm._reference_point_truncate(self.working_population, self.population_size)
+
+            self.working_variables = []
+            self.working_objectives = []
+            for point in self.working_population:
+                self.working_variables.append(point.variables)
+                self.working_objectives.append(point.objectives)
+
+            offspring = []
+            while len(offspring) < self.population_size:
+                parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.working_population)
+                offspring.extend(self.algorithm.variator.evolve(parents))
+
+            new_samples = []
+            for single_offspring in offspring:
+                new_samples.append(single_offspring.variables)
+
+            return new_samples
+
 
         if self.solver == 'IBEA':
             for i in range(len(self.working_variables)):
