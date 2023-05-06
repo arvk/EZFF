@@ -71,7 +71,7 @@ class Challenge():
                     self.problem.types[counter] = Real(self.variable_bounds[value][0], self.variable_bounds[value][1])
 
         if self.solver == 'NSGAII':
-            self.algorithm = platypus.NSGAII(self.problem, self.population_size)
+            self.algorithm = myN2(self.problem, self.population_size)
             self.algorithm.variator = platypus.config.default_variator(self.problem)
 
         if self.solver == 'IBEA':
