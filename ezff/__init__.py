@@ -58,7 +58,7 @@ class Challenge():
 
     def initialize_platypus(self):
         # Initialization for Platypus-Opt Solvers
-        if self.solver in ['NSGAII','IBEA','NSGAIII']:
+        if self.solver in ['NSGAII','IBEA','NSGAIII','GDE3']:
             self.problem = platypus.Problem(len(self.variables), self.num_errors)
             self.directions = [platypus.Problem.MINIMIZE for error in range(self.num_errors)]
             self.working_population = []
@@ -85,6 +85,10 @@ class Challenge():
             self.population_size = divisions
             self.algorithm = platypus.NSGAIII(self.problem, self.population_size)
             self.algorithm.variator = platypus.config.default_variator(self.problem)
+
+
+        if self.solver == 'GDE3':
+            self.algorithm = platypus.GDE3(self.problem, self.population_size)
 
 
     def initialize_mobo(self):
@@ -154,6 +158,36 @@ class Challenge():
             return new_samples
 
 
+        if self.solver == 'GDE3':
+            for i in range(len(self.working_variables)):
+                mysol = platypus.Solution(self.problem)
+                mysol.variables = self.working_variables[i]
+                mysol.objectives = self.working_objectives[i]
+                self.working_population.append(mysol)
+
+            self.algorithm.population = self.working_population
+            self.working_population = self.algorithm.survival(self.working_population)
+
+            self.working_variables = []
+            self.working_objectives = []
+            for point in self.working_population:
+                self.working_variables.append(point.variables)
+                self.working_objectives.append(point.objectives)
+
+            offspring = []
+            for i in range(num_new_samples):
+                parents = self.algorithm.select(i, self.algorithm.variator.arity)
+                offspring.extend(self.algorithm.variator.evolve(parents))
+
+            new_samples = []
+            for single_offspring in offspring:
+                new_samples.append(single_offspring.variables)
+
+            return new_samples
+
+
+
+
         if self.solver == 'NSGAIII':
             for i in range(len(self.working_variables)):
                 mysol = platypus.Solution(self.problem)
@@ -180,6 +214,7 @@ class Challenge():
                 new_samples.append(single_offspring.variables)
 
             return new_samples
+
 
 
         if self.solver == 'IBEA':
