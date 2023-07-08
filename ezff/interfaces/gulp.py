@@ -39,12 +39,37 @@ class job:
             "atomic_charges": False,
             "phonon_dispersion": None,
             "phonon_dispersion_from": None,
-            "phonon_dispersion_to": None
+            "phonon_dispersion_to": None,
+            "phonon_G":None, # Phonons at gamma point
+            "sshift": None
             }
         self.verbose = verbose
         if verbose:
             print('Created a new GULP job')
 
+    @classmethod
+    def from_dict(cls, root, data:dict):
+        # only PBC
+        job = cls(path=os.path.join(os.path.abspath(root), data['name']))
+        job['structure'] = data['structure']
+        job.options['pbc'] = True
+        job.options["relax_atoms"] = True
+        job.options["relax_cell"] = True
+
+        if data.get['phonon_G']:
+            job.options['phonon_G'] = True
+        else:
+            pass
+
+        if data['phonon_dispersion']:
+            job.options['phonon_dispersion'] = True
+        else:
+            pass
+
+        job.options["phonon_dispersion_from"] = data.get("phonon_dispersion_from")
+        job.options["phonon_dispersion_to"] = data.get("phonon_dispersion_to")
+        
+        return job
 
     def generate_forcefield(self, template_string, parameters, FFtype = None, outfile = None):
         self.options['fftype'] = FFtype.upper()
@@ -92,12 +117,15 @@ class job:
         script = open(self.scriptfile,'w')
         header_line = ''
         if opts['relax_atoms']:
-            header_line += 'optimise '
+            header_line += 'optimise c6 '
 
             if opts['relax_cell']:
                 header_line += 'conp '
             else:
                 header_line += 'conv '
+
+        if opts['phonon_G']:
+            header_line += 'phonon nononanal '
 
         if header_line == '':
             header_line = 'gradient '
@@ -110,6 +138,9 @@ class job:
 
         header_line += 'comp property '
         script.write(header_line + '\n')
+
+        if opts["sshift"]:
+            script.write(f'sshift {opts["sshift"]}\n')
 
         script.write('\n')
         script.write('\n')
@@ -153,8 +184,6 @@ class job:
         script.write('\n')
 
         script.close()
-
-
 
     def cleanup(self):
         """
@@ -210,7 +239,95 @@ class job:
         """
         return _read_structure(self.outfile, relax_cell=self.options['relax_cell'], initial_box=self.structure.box)
 
+    def read_phonon_G(self, n):
+        return _read_phonon_G(self.outfile, n=n)
 
+    def read_bulk_shear(self):
+        return _read_bulk_shear(self.outfile)
+
+    def read_young_xyz(self):
+        return _read_young_xyz(self.outfile)
+
+def _read_young_xyz(outfilename):
+    """
+    Read Young's modulus from a completed GULP job
+
+    :param outfilename: Path of the stdout from the GULP job
+    :type outfilename: str
+    :returns: list of Youngs Moduli values in GPa or zeroes
+    """
+    yx, yy, yz = [0]*3
+    with open(outfilename) as f:
+        for line in f:
+            if 'Youngs Moduli (GPa)' in line:
+                break
+    try:
+        ym_ = line.split('=')[1].split()
+    except:
+        ym_ = ['*']
+
+    for i in ym_:
+        if '*' in i:
+            break
+    else:
+        yx, yy, yz = list(map(float, line.split('=')[1].split()))
+
+    return yx, yy, yz
+
+def _read_phonon_G(outfilename, n):
+    """
+    Read phonons frequences at Gamma point from a completed GULP job
+
+    :param outfilename: Path of the stdout from the GULP job
+    :type outfilename: str
+    :param n: Number of frequencies the function should return
+    :returns: list of first n frequencies
+    """
+    freq = []
+
+    with open(outfilename) as fr:
+        data_ = fr.readlines()
+
+    try:
+        i = data_.index('  Frequencies (cm-1) [NB: Negative implies an imaginary mode]:\n') + 2
+    except:
+        return [-1000]*n
+
+    while i != 0:
+        if '--------' in data_[i]:
+            i = 0
+            continue
+        if data_[i]:
+            try:
+                for j in list(map(float, data_[i].split())):
+                    freq.append(j)
+            except:
+                freq = [float(-1000)]*n
+                break
+            i += 1
+        else:
+            i = 0
+    return freq[:n]
+
+def _read_bulk_shear(otfilename):
+    """
+    Read Bulk and shear moduli from a completed GULP job
+
+    :param outfilename: Path of the stdout from the GULP job
+    :type outfilename: str
+    :returns: Values of Bulk and shear moduli packed in a tuple
+    """
+    _bulk_value, _shear_value = float(0), float(0)
+    with open(otfilename, 'r') as fr:
+        try:
+            for line in fr:
+                if 'Bulk  Modulus (GPa)' in line:
+                    _bulk_value = float(line.split()[4])
+                if 'Shear Modulus (GPa)' in line:
+                    _shear_value = float(line.split()[4])
+        except:
+            pass
+    return _bulk_value, _shear_value
 
 def _read_elastic_moduli(outfilename):
     """
@@ -246,9 +363,10 @@ def _read_elastic_moduli(outfilename):
                 moduli[i,:] = float_modarray
             moduli_array.append(moduli)
     outfile.close()
+    if not moduli_array:
+        moduli_array = np.array([np.zeros((6, 6))])
+
     return moduli_array
-
-
 
 def _read_energy(outfilename):
     """
@@ -265,6 +383,10 @@ def _read_energy(outfilename):
             if line.strip().split()[-1] == 'eV':
                 energy_in_eV.append(float(line.strip().split()[-2]))
     outfile.close()
+
+    if not energy_in_eV:
+        energy_in_eV.append(float(0))
+
     return np.array(energy_in_eV)
 
 
@@ -330,19 +452,17 @@ def _read_atomic_charges(outfilename):
 
 
 
-def _read_structure(outfilename, relax_cell=True, initial_box=None):
+def _read_structure(outfilename, relax_cell=True, initial_box=None, D='3'):
+    import re
+    pattern = r'\s{2}Final\s[\w]+\s*\/*[\w]*\scoordinates[\w\s]*\s:'
     """
     Read converged structure (cell and atomic positions) from the MD job
-
     :param outfilename: Path of file containing stdout of the GULP job
     :type outfilename: str
-
     :param relax_cell: Flag to identify if simulation cell was relaxed during the MD job
     :type relax_cell: boolean
-
     :param initial_box: Initial simulation cell used for the MD job
     :type initial_box: 3X3 np.ndarray
-
     :returns: xtal.AtTraj object with (optimized) individual structures as separate snapshots
     """
     relaxed = xtal.AtTraj()
@@ -363,7 +483,7 @@ def _read_structure(outfilename, relax_cell=True, initial_box=None):
     outfile.close()
 
     snapID = 0
-    convert_to_cart = True
+    convert_to_cart = False
     outfile = open(outfilename, 'r')
 
     while True:
@@ -372,27 +492,31 @@ def _read_structure(outfilename, relax_cell=True, initial_box=None):
         if not oneline: # break for EOF
             break
 
-        if 'Comparison of initial and final' in oneline:
+        if re.search(pattern, oneline):
             dummyline = outfile.readline()
             dummyline = outfile.readline()
             dummyline = outfile.readline()
+            data_line = outfile.readline().split()[1:4]
             dummyline = outfile.readline()
             while True:
                 data = outfile.readline().strip().split()
                 if data[0].isdigit():
                     atomID = int(data[0])-1
-                    if data[1] == 'x':
-                        axisID = 0
-                    elif data[1] == 'y':
-                        axisID = 1
-                    else:
-                        axisID = 2
-
-                    if data[5] == 'Cartesian':
-                        relaxed.snaplist[snapID].atomlist[atomID].cart[axisID] = float(data[3])
-                        convert_to_cart = False
-                    elif data[5] == 'Fractional':
-                        relaxed.snaplist[snapID].atomlist[atomID].fract[axisID] = float(data[3])
+                    for i in range(3):
+                        axisID = i
+                        if data_line[i] == '(Angs)':
+                            try:
+                                coord = float(data[i + 3])/50
+                            except:
+                                coord = 10000
+                            relaxed.snaplist[snapID].atomlist[atomID].fract[axisID] = coord
+                        else:
+                            try:
+                                coord = float(data[i + 3])
+                            except:
+                                coord = 10000
+                            relaxed.snaplist[snapID].atomlist[atomID].fract[axisID] = coord 
+                            convert_to_cart = True
                 elif data[0][0] == '-':
                     break
 
@@ -412,7 +536,16 @@ def _read_structure(outfilename, relax_cell=True, initial_box=None):
                 if 'Final Cartesian lattice vectors (Angstroms)' in oneline:
                     dummyline = outfile.readline()
                     for i in range(3):
-                        relaxed.box[i][0:3] = list(map(float,outfile.readline().strip().split()))
+                        # Добавил для обхода ошибки при некорректной структуре
+                        line = outfile.readline()
+                        try:
+                            relaxed.box[i][0:3] = list(map(float, line.strip().split()))
+                        except:
+                            relaxed.box[i][0:3] = [float(1000), float(1000), float(1000)]
+                    if D == '3':
+                        pass
+                    if D == '2':
+                        relaxed.box[2][0:3] = [0, 0, 50]
                     relaxed.make_dircar_matrices()
                     relaxed.snaplist[snapID].dirtocar()
                     snapID += 1
@@ -420,5 +553,7 @@ def _read_structure(outfilename, relax_cell=True, initial_box=None):
         else:
             relaxed.make_dircar_matrices()
             relaxed.dirtocar()
+        
+        relaxed.box_to_abc()
 
     return relaxed

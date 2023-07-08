@@ -1,0 +1,9 @@
+[report]
+exclude_lines = 
+   # exclude abstractmethods
+   @(abc\.)?abstractmethod
+
+[run]
+omit = 
+    tests/*
+    examples/*

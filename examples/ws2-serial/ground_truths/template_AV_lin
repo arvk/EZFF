@@ -1,0 +1,17 @@
+sw3                                                                     #
+S W W <<lambda>> <<theta>> <<gamma>> <<gamma>> 0.0 3.16 0. 3.16 0. 4.3 1 0 0 0 #
+#
+lin3                                                                       #
+W S S    <<lin3>>           1 4             0. 3.16 0. 3.16 0. 5.0 1       #  0.096835 Three-body cnst
+morse                                                         
+W  W     <<WW_A>> <<WW_g>> <<WW_B>>            15.0  1 0 0    
+W  S     <<WS_A>> <<WS_g>> <<WS_B>>            15.0  1 0 0    
+#
+buck                                                      
+S   S   <<SS_A>> <<SS_g>>   <<SS_B>>           15.0  1 0 0
+#                                                                                                             
+species                                                   
+W  core   1.08                                            
+S  core  -0.54
+shift
+<<shift>>                                            

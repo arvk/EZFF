@@ -1,4 +1,4 @@
-"""This module provide general functions for EZFF"""
+"""A module provide general functions for EZFF."""
 import os
 import sys
 import xtal
