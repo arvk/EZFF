@@ -1,4 +1,4 @@
-# EZFF
+# EZFF2
 
 **Note** this code is modified version of [EZFF](https://github.com/arvk/EZFF)
 
