@@ -21,4 +21,4 @@ Uses [xtal](https://github.com/USCCACS/xtal) for handling atomic structures and 
 Multi-objective optimization is implemented through [Platypus](https://github.com/Project-Platypus/Platypus).
 
 ## Modifications
-Added the ability to calculate the phonon frequencies at the Gamma point, as well as to read the Young's modulus (see example ws2-serial).
+Added the capability to calculate the phonon frequencies at the Gamma point and to read the Young's modulus (see to the example "ws2-serial").
