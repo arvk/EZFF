@@ -13,6 +13,7 @@ except ImportError:
 from .ffio import *
 from .errors import *
 import nevergrad as ng
+import mobopt
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -70,6 +71,7 @@ class FFParam(object):
         self.algo_string = algo_string
 
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
+        mobopt_algos = ['MOBO']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -96,40 +98,123 @@ class FFParam(object):
             elif algo_string.upper() == 'RANDOMSEARCH_SO':
                 self.algorithm = ng.optimizers.RandomSearch(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
 
+        elif algo_string.upper() in mobopt_algos:
+            self.algo_framework = 'mobopt'
+            var_mins = []
+            var_maxs = []
+            for variable in self.variable_bounds.keys():
+                var_mins.append(self.variable_bounds[variable][0])
+                var_maxs.append(self.variable_bounds[variable][1])
+            self.mobopt_variable_bounds = np.vstack((var_mins, var_maxs)).T
+            self.algorithm = mobopt.MOBayesianOpt(target = self.error_function, NObj = self.num_errors, pbounds = self.mobopt_variable_bounds)
 
 
     def ask(self):
+        new_variables = []
         if self.algo_framework == 'nevergrad':
-            new_variables = []
             for i in range(self.population_size):
                 newvar = self.algorithm.ask()
                 new_var_as_list = np.array([newvar.value[self.variable_names[i]] for i in range(len(self.variable_names))])
                 new_variables.append(new_var_as_list)
             return new_variables
 
+        elif self.algo_framework == 'mobopt':
+            q = 0.5
+            prob = 0.1
+
+            for pointID in range(len(self.variables)):
+                self.algorithm.space.add_observation(np.array(self.variables[pointID]), 0.0 - np.array(self.errors[pointID]))
+
+            for i in range(self.num_errors):
+                yy = self.algorithm.space.f[:, i]
+                self.algorithm.GP[i].fit(self.algorithm.space.x, yy)
+
+            pop, logbook, front = mobopt._NSGA2.NSGAII(self.algorithm.NObj,
+                                                       self.algorithm._MOBayesianOpt__ObjectiveGP,
+                                                       self.algorithm.pbounds,
+                                                       MU=self.population_size*2)
+
+
+            Population = np.asarray(pop)
+            IndexF, FatorF = self.algorithm._MOBayesianOpt__LargestOfLeast(front, self.algorithm.space.f)
+            IndexPop, FatorPop = self.algorithm._MOBayesianOpt__LargestOfLeast(Population, self.algorithm.space.x)
+
+            Fator = q * FatorF + (1-q) * FatorPop
+            sorted_ids = np.argsort(Fator)
+
+
+            for i in range(self.population_size):
+                Index_try = int(np.argwhere(sorted_ids == np.max(sorted_ids)-i))
+                self.algorithm.x_try = Population[Index_try]
+
+                if self.algorithm.space.RS.uniform() < prob:
+                    if self.algorithm.NParam > 1:
+                        ii = self.algorithm.space.RS.randint(low=0, high=self.algorithm.NParam - 1)
+                    else:
+                        ii = 0
+
+                    self.algorithm.x_try[ii] = self.algorithm.space.RS.uniform(low=self.algorithm.pbounds[ii][0],high=self.algorithm.pbounds[ii][1])
+
+                new_variables.append(self.algorithm.x_try)
+
+            return new_variables
+
+
 
     def parameterize(self, num_epochs = None):
 
-        for epoch in range(num_epochs):
+        if self.algo_framework == 'nevergrad':
+            for epoch in range(num_epochs):
 
-            self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
+                self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
-            for computed_id, computed in enumerate(self.variables):
-                computed_value = {k:v for (k,v) in zip(self.variable_names,computed)}
-                self.algorithm.suggest(computed_value)
-                asked_suggestion = self.algorithm.ask()
-                self.algorithm.tell(asked_suggestion, self.errors[computed_id])
+                for computed_id, computed in enumerate(self.variables):
+                    computed_value = {k:v for (k,v) in zip(self.variable_names,computed)}
+                    self.algorithm.suggest(computed_value)
+                    asked_suggestion = self.algorithm.ask()
+                    self.algorithm.tell(asked_suggestion, self.errors[computed_id])
 
-            new_variables = self.ask()
-            new_errors = []
-            for variable in new_variables:
-                variable_dict = dict(zip(self.variable_names, variable))
-                error = self.error_function(variable_dict)
-                new_errors.append(error)
+                new_variables = self.ask()
+                new_errors = []
+                for variable in new_variables:
+                    variable_dict = dict(zip(self.variable_names, variable))
+                    error = self.error_function(variable_dict)
+                    new_errors.append(error)
 
-            for variable_id, variable in enumerate(new_variables):
-                self.variables.append(variable)
-                self.errors.append(new_errors[variable_id])
+                for variable_id, variable in enumerate(new_variables):
+                    self.variables.append(variable)
+                    self.errors.append(new_errors[variable_id])
+
+
+        elif self.algo_framework == 'mobopt':
+            for epoch in range(num_epochs):
+
+                self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
+
+                new_variables = self.ask()
+                new_errors = []
+                for variable in new_variables:
+                    variable_dict = dict(zip(self.variable_names, variable))
+                    error = self.error_function(variable_dict)
+                    new_errors.append(error)
+
+                for variable_id, variable in enumerate(new_variables):
+                    self.variables.append(variable)
+                    self.errors.append(new_errors[variable_id])
+
+
+    def get_best_recommendation(self):
+        best_variables = None
+        best_errors = None
+        if self.algo_framework == 'nevergrad':
+            best_recommendation = self.algorithm.provide_recommendation()
+            best_variables = best_recommendation.value
+            best_errors = best_recommendation.loss
+        elif self.algo_framework == 'mobopt':
+            best_errors, best_variables = self.algorithm.space.ParetoSet()
+        return [best_variables, best_errors]
+
+
 
 
 
