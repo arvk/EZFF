@@ -14,6 +14,17 @@ from .ffio import *
 from .errors import *
 import nevergrad as ng
 import mobopt
+import math
+
+from pymoo.core.problem import Problem as pymoo_Problem
+from pymoo.core.individual import Individual as pymoo_Individual
+from pymoo.core.population import Population as pymoo_Population
+from pymoo.algorithms.moo.nsga2 import NSGA2 as pymoo_NSGA2
+from pymoo.algorithms.moo.nsga3 import NSGA3 as pymoo_NSGA3
+from pymoo.algorithms.moo.unsga3 import UNSGA3 as pymoo_UNSGA3
+from pymoo.algorithms.moo.ctaea import CTAEA as pymoo_CTAEA
+from pymoo.util.ref_dirs import get_reference_directions as pymoo_get_reference_directions
+
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -72,6 +83,7 @@ class FFParam(object):
 
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
         mobopt_algos = ['MOBO']
+        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -107,6 +119,66 @@ class FFParam(object):
                 var_maxs.append(self.variable_bounds[variable][1])
             self.mobopt_variable_bounds = np.vstack((var_mins, var_maxs)).T
             self.algorithm = mobopt.MOBayesianOpt(target = self.error_function, NObj = self.num_errors, pbounds = self.mobopt_variable_bounds)
+
+        elif algo_string.upper() in pymoo_algos:
+            self.algo_framework = 'pymoo'
+            var_mins = []
+            var_maxs = []
+            for variable in self.variable_bounds.keys():
+                var_mins.append(self.variable_bounds[variable][0])
+                var_maxs.append(self.variable_bounds[variable][1])
+            self.pymoo_problem = pymoo_Problem(n_var = self.num_variables, n_obj = self.num_errors, n_constr = 0, xl = var_mins, xu = var_maxs)
+
+            initial_population = []
+            for varid, var in enumerate(self.variables):
+                evaledsoln = pymoo_Individual()
+                evaledsoln._X = var
+                evaledsoln._F = self.errors[varid]
+                initial_population.append(evaledsoln)
+
+            if algo_string.upper() == 'NSGA2_MO_PYMOO':
+                if initial_population == []:
+                    self.algorithm = pymoo_NSGA2(self.population_size)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_NSGA2(self.population_size, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
+            elif algo_string.upper() == 'NSGA3_MO_PYMOO':
+                # Identify number of reference points
+                min_points = [math.comb(self.num_errors + ref_pts - 1, ref_pts) for ref_pts in range(25)]
+                num_reference_points = np.sum(np.array(min_points) < self.population_size)
+                reference_directions = pymoo_get_reference_directions("das-dennis", self.num_errors, n_partitions=num_reference_points)
+                if initial_population == []:
+                    self.algorithm = pymoo_NSGA3(pop_size=self.population_size, ref_dirs=reference_directions)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_NSGA3(pop_size=self.population_size, ref_dirs=reference_directions, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
+            elif algo_string.upper() == 'UNSGA3_MO_PYMOO':
+                # Identify number of reference points
+                min_points = [math.comb(self.num_errors + ref_pts - 1, ref_pts) for ref_pts in range(25)]
+                num_reference_points = np.sum(np.array(min_points) < self.population_size)
+                reference_directions = pymoo_get_reference_directions("das-dennis", self.num_errors, n_partitions=num_reference_points)
+                if initial_population == []:
+                    self.algorithm = pymoo_UNSGA3(pop_size=self.population_size, ref_dirs=reference_directions)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_UNSGA3(pop_size=self.population_size, ref_dirs=reference_directions, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
+            elif algo_string.upper() == 'CTAEA_MO_PYMOO':
+                # Identify number of reference points
+                min_points = [math.comb(self.num_errors + ref_pts - 1, ref_pts) for ref_pts in range(25)]
+                num_reference_points = np.sum(np.array(min_points) < self.population_size)
+                reference_directions = pymoo_get_reference_directions("das-dennis", self.num_errors, n_partitions=num_reference_points)
+                if initial_population == []:
+                    self.algorithm = pymoo_CTAEA(ref_dirs=reference_directions)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_CTAEA(ref_dirs=reference_directions, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
 
 
     def ask(self):
@@ -160,6 +232,14 @@ class FFParam(object):
             return new_variables
 
 
+        elif self.algo_framework == 'pymoo':
+            newXs = self.algorithm.ask()
+
+            for newX in newXs:
+                new_variables.append(newX.X)
+
+            return new_variables
+
 
     def parameterize(self, num_epochs = None):
 
@@ -203,6 +283,23 @@ class FFParam(object):
                     self.errors.append(new_errors[variable_id])
 
 
+        elif self.algo_framework == 'pymoo':
+            for epoch in range(num_epochs):
+
+                self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
+
+                new_variables = self.ask()
+                new_errors = []
+                for variable in new_variables:
+                    variable_dict = dict(zip(self.variable_names, variable))
+                    error = self.error_function(variable_dict)
+                    new_errors.append(error)
+
+                for variable_id, variable in enumerate(new_variables):
+                    self.variables.append(variable)
+                    self.errors.append(new_errors[variable_id])
+
+
     def get_best_recommendation(self):
         best_variables = None
         best_errors = None
@@ -212,6 +309,19 @@ class FFParam(object):
             best_errors = best_recommendation.loss
         elif self.algo_framework == 'mobopt':
             best_errors, best_variables = self.algorithm.space.ParetoSet()
+        elif self.algo_framework == 'pymoo':
+            initial_population = []
+            for varid, var in enumerate(self.variables):
+                evaledsoln = pymoo_Individual()
+                evaledsoln._X = var
+                evaledsoln._F = self.errors[varid]
+                initial_population.append(evaledsoln)
+            initial_population = pymoo_Population(initial_population)
+            self.algorithm.tell(infills = initial_population)
+            best_recommendation = self.algorithm.result()
+            best_variables = best_recommendation.X
+            best_errors = best_recommendation.F
+
         return [best_variables, best_errors]
 
 
