@@ -12,8 +12,124 @@ except ImportError:
     pass
 from .ffio import *
 from .errors import *
+import nevergrad as ng
 
 __version__ = '0.9.4' # Update setup.py if version changes
+
+
+class FFParam(object):
+    """
+    Class for EZFF Forcefield Parametrization
+    """
+
+    def __init__(self, error_function=None, num_errors=None):
+        """
+        :param num_errors: Number of errors to be minimized for forcefield optimization
+        :type num_errors: int
+
+        :param error_function: User-defined function that takes-in a dictionary of variable-value pairs and outputs a list of computed errors
+        :type error_function: function
+        """
+        self.error_function = error_function
+        self.num_errors = num_errors
+        self.relative_weights = np.array([1.0 for i in range(num_errors)])
+        self.variables = []
+        self.errors = []
+
+    def read_variable_bounds(self, filename):
+        """Read permissible lower and upper bounds for decision variables used in forcefields optimization
+
+        :param filename: Name of text file listing bounds for each decision variable that must be optimized
+        :type filename: str
+        """
+        self.variable_bounds = ffio.read_variable_bounds(filename)
+        self.num_variables = len(self.variable_bounds.keys())
+        self.variable_names = [key for key in self.variable_bounds.keys()]
+
+
+    def read_forcefield_template(self, template_filename):
+        """Read-in the forcefield template. The template is constructed from a functional forcefield file by replacing all optimizable numerical values with variable names enclosed within dual angled brackets << and >>.
+
+        :param template_filename: Name of the forcefield template file to be read-in
+        :type template_filename: str
+        """
+        self.forcefield_template = ffio.read_forcefield_template(template_filename)
+
+    def set_algorithm(self, algo_string, population_size = None):
+        """
+        Set optimization algorithm. Initialize interfaces to external optimizers and return the algorithm object
+
+        :param algo_string: Type of algorithm to parameterize the forcefield
+        :type algo_string: str
+
+        :param population_size: Number of candidate forcefields evaluated every epoch
+        :type algo_string: int
+        """
+
+        self.population_size = population_size
+        self.algo_string = algo_string
+
+        ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
+
+        if algo_string.upper() in ng_algos:
+            self.algo_framework = 'nevergrad'
+            ng_variable_dict = ng.p.Dict()
+            for variable in self.variable_bounds.keys():
+                ng_variable_dict[variable] = ng.p.Scalar(lower = self.variable_bounds[variable][0], upper = self.variable_bounds[variable][1])
+
+            if algo_string.upper() == 'NGOPT_SO':
+                self.algorithm = ng.optimizers.NGOpt(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'TWOPOINTSDE_SO':
+                self.algorithm = ng.optimizers.TwoPointsDE(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'PORTFOLIODISCRETEONEPLUSONE_SO':
+                self.algorithm = ng.optimizers.PortfolioDiscreteOnePlusOne_SO(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'ONEPLUSONE_SO':
+                self.algorithm = ng.optimizers.OnePlusOne(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'CMA_SO':
+                self.algorithm = ng.optimizers.CMA(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'TBPSA_SO':
+                self.algorithm = ng.optimizers.TBPSA(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'PSO_SO':
+                self.algorithm = ng.optimizers.PSO(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO':
+                self.algorithm = ng.optimizers.ScrHammersleySearchPlusMiddlePoint(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+            elif algo_string.upper() == 'RANDOMSEARCH_SO':
+                self.algorithm = ng.optimizers.RandomSearch(parametrization=ng_variable_dict, budget=self.population_size, num_workers=2)
+
+
+
+    def ask(self):
+        if self.algo_framework == 'nevergrad':
+            new_variables = []
+            for i in range(self.population_size):
+                newvar = self.algorithm.ask()
+                new_var_as_list = np.array([newvar.value[self.variable_names[i]] for i in range(len(self.variable_names))])
+                new_variables.append(new_var_as_list)
+            return new_variables
+
+
+    def parameterize(self, num_epochs = None):
+
+        for epoch in range(num_epochs):
+
+            self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
+
+            for computed_id, computed in enumerate(self.variables):
+                computed_value = {k:v for (k,v) in zip(self.variable_names,computed)}
+                self.algorithm.suggest(computed_value)
+                asked_suggestion = self.algorithm.ask()
+                self.algorithm.tell(asked_suggestion, self.errors[computed_id])
+
+            new_variables = self.ask()
+            new_errors = []
+            for variable in new_variables:
+                variable_dict = dict(zip(self.variable_names, variable))
+                error = self.error_function(variable_dict)
+                new_errors.append(error)
+
+            for variable_id, variable in enumerate(new_variables):
+                self.variables.append(variable)
+                self.errors.append(new_errors[variable_id])
 
 
 
