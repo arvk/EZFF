@@ -23,8 +23,10 @@ from pymoo.algorithms.moo.nsga2 import NSGA2 as pymoo_NSGA2
 from pymoo.algorithms.moo.nsga3 import NSGA3 as pymoo_NSGA3
 from pymoo.algorithms.moo.unsga3 import UNSGA3 as pymoo_UNSGA3
 from pymoo.algorithms.moo.ctaea import CTAEA as pymoo_CTAEA
+from pymoo.algorithms.moo.sms import SMSEMOA as pymoo_SMSEMOA
 from pymoo.util.ref_dirs import get_reference_directions as pymoo_get_reference_directions
-
+from pymoo.algorithms.moo.rvea import RVEA as pymoo_RVEA
+from pymoo.termination.max_eval import MaximumFunctionCallTermination
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -83,7 +85,7 @@ class FFParam(object):
 
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
         mobopt_algos = ['MOBO']
-        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO']
+        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -178,6 +180,30 @@ class FFParam(object):
                 else:
                     initial_population = pymoo_Population(initial_population)
                     self.algorithm = pymoo_CTAEA(ref_dirs=reference_directions, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
+            elif algo_string.upper() == 'SMSEMOA_MO_PYMOO':
+                if initial_population == []:
+                    self.algorithm = pymoo_SMSEMOA(self.population_size)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_SMSEMOA(self.population_size, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
+            elif algo_string.upper() == 'RVEA_MO_PYMOO':
+                # Identify number of reference points
+                min_points = [math.comb(self.num_errors + ref_pts - 1, ref_pts) for ref_pts in range(25)]
+                num_reference_points = np.sum(np.array(min_points) < self.population_size)
+                reference_directions = pymoo_get_reference_directions("das-dennis", self.num_errors, n_partitions=num_reference_points)
+                if initial_population == []:
+                    self.algorithm = pymoo_RVEA(ref_dirs=reference_directions, pop_size = self.population_size)
+                    termination = MaximumFunctionCallTermination(5000)
+                    self.algorithm.termination = termination
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_RVEA(ref_dirs=reference_directions, sampling = initial_population, pop_size = self.population_size)
+                    termination = MaximumFunctionCallTermination(5000)
+                    self.algorithm.termination = termination
                 self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
 
 
