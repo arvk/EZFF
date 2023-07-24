@@ -27,6 +27,8 @@ from pymoo.algorithms.moo.sms import SMSEMOA as pymoo_SMSEMOA
 from pymoo.util.ref_dirs import get_reference_directions as pymoo_get_reference_directions
 from pymoo.algorithms.moo.rvea import RVEA as pymoo_RVEA
 from pymoo.termination.max_eval import MaximumFunctionCallTermination
+from pymoo.algorithms.soo.nonconvex.es import ES as pymoo_ES
+from pymoo.algorithms.soo.nonconvex.nelder import NelderMead as pymoo_NelderMead
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -85,7 +87,7 @@ class FFParam(object):
 
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
         mobopt_algos = ['MOBO']
-        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO']
+        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO', 'ES_SO_PYMOO', 'NELDERMEAD_SO_PYMOO']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -206,6 +208,23 @@ class FFParam(object):
                     self.algorithm.termination = termination
                 self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
 
+            elif algo_string.upper() == 'ES_SO_PYMOO':
+                if initial_population == []:
+                    self.algorithm = pymoo_ES(n_offspring = self.population_size, pop_size = self.population_size)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_ES(n_offspring = self.population_size, pop_size = self.population_size, sampling = initial_population)
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
+            elif algo_string.upper() == 'NELDERMEAD_SO_PYMOO':
+                if initial_population == []:
+                    self.algorithm = pymoo_NelderMead()
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_NelderMead()
+                    self.algorithm.pop = initial_population
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
+
 
     def ask(self):
         new_variables = []
@@ -259,10 +278,11 @@ class FFParam(object):
 
 
         elif self.algo_framework == 'pymoo':
-            newXs = self.algorithm.ask()
+            while (len(new_variables) < self.population_size):
+                newXs = self.algorithm.ask()
 
-            for newX in newXs:
-                new_variables.append(newX.X)
+                for newX in newXs:
+                    new_variables.append(newX.X)
 
             return new_variables
 
@@ -343,7 +363,11 @@ class FFParam(object):
                 evaledsoln._F = self.errors[varid]
                 initial_population.append(evaledsoln)
             initial_population = pymoo_Population(initial_population)
-            self.algorithm.tell(infills = initial_population)
+            if '_SO_' in self.algo_string:
+                self.algorithm.pop = initial_population
+                self.algorithm._set_optimum()
+            else:
+                self.algorithm.tell(infills = initial_population)
             best_recommendation = self.algorithm.result()
             best_variables = best_recommendation.X
             best_errors = best_recommendation.F
