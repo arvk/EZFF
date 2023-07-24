@@ -34,6 +34,13 @@ from pymoo.algorithms.soo.nonconvex.cmaes import CMAES as pymoo_CMAES
 
 import platypus
 
+
+from schwimmbad import MultiPool as sch_MultiPool
+from schwimmbad import MPIPool as sch_MPIPool
+from mpi4py import MPI
+import multiprocessing
+
+
 __version__ = '0.9.4' # Update setup.py if version changes
 
 
@@ -372,9 +379,8 @@ class FFParam(object):
 
 
 
-
-    def parameterize(self, num_epochs = None):
-
+    def parameterize(self, num_epochs = None, pool = None):
+        self.pool = pool
         if self.algo_framework == 'nevergrad':
             for epoch in range(num_epochs):
 
@@ -439,10 +445,29 @@ class FFParam(object):
 
                 new_variables = self.ask()
                 new_errors = []
-                for variable in new_variables:
-                    variable_dict = dict(zip(self.variable_names, variable))
-                    error = self.error_function(variable_dict)
-                    new_errors.append(error)
+
+                if self.pool is None:
+                    for variable in new_variables:
+                        variable_dict = dict(zip(self.variable_names, variable))
+                        error = self.error_function(variable_dict)
+                        new_errors.append(error)
+
+                    # for variable_id, variable in enumerate(new_variables):
+                    #     self.variables.append(variable)
+                    #     self.errors.append(new_errors[variable_id])
+
+                else:
+                    if self.pool_type == 'mpi':
+                        if not self.pool.is_master():
+                            pool.wait()
+
+                    variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
+                    new_errors = self.pool.map(self.error_function, variable_dict_list)
+
+                    # for variable_id, variable in enumerate(new_variables):
+                    #     self.variables.append(variable)
+                    #     self.errors.append(new_errors[variable_id])
+
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
@@ -489,6 +514,21 @@ class FFParam(object):
 
 
 
+    def generate_pool(self, string):
+        if string == 'multi':
+            self.pool_type = 'multi'
+            return sch_MultiPool()
+        elif string == 'mpi':
+            self.pool_type = 'mpi'
+            return sch_MPIPool()
+
+def get_pool_rank(string):
+    if string == 'multi':
+        return multiprocessing.current_process()._identity[0]
+    elif string == 'mpi':
+        return MPI.COMM_WORLD.Get_rank()
+    else:
+        return '0'
 
 
 class OptProblem(Problem):
