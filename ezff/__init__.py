@@ -15,6 +15,7 @@ from .errors import *
 import nevergrad as ng
 import mobopt
 import math
+import random
 
 from pymoo.core.problem import Problem as pymoo_Problem
 from pymoo.core.individual import Individual as pymoo_Individual
@@ -30,6 +31,8 @@ from pymoo.termination.max_eval import MaximumFunctionCallTermination
 from pymoo.algorithms.soo.nonconvex.es import ES as pymoo_ES
 from pymoo.algorithms.soo.nonconvex.nelder import NelderMead as pymoo_NelderMead
 from pymoo.algorithms.soo.nonconvex.cmaes import CMAES as pymoo_CMAES
+
+import platypus
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -89,6 +92,7 @@ class FFParam(object):
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
         mobopt_algos = ['MOBO']
         pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO', 'ES_SO_PYMOO', 'NELDERMEAD_SO_PYMOO', 'CMAES_SO_PYMOO']
+        platypus_algos = ['NSGA2_MO_PLATYPUS']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -236,6 +240,31 @@ class FFParam(object):
                     self.algorithm.pop = initial_population
                 self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
 
+        elif algo_string.upper() in platypus_algos:
+            self.algo_framework = 'platypus'
+            var_mins = []
+            var_maxs = []
+            for variable in self.variable_bounds.keys():
+                var_mins.append(self.variable_bounds[variable][0])
+                var_maxs.append(self.variable_bounds[variable][1])
+            self.platypus_problem = platypus.Problem(self.num_variables, self.num_errors)
+            self.platypus_problem.types = [platypus.Real(var_mins[i], var_maxs[i]) for i in range(self.num_variables)]
+
+            initial_population = []
+            for varid, var in enumerate(self.variables):
+                evaledsoln = platypus.Solution(self.platypus_problem)
+                evaledsoln.variables[:] = list(var)
+                evaledsoln.objectives[:] = list(self.errors[varid])
+                initial_population.append(evaledsoln)
+
+            if algo_string.upper() == 'NSGA2_MO_PLATYPUS':
+                self.algorithm = platypus.NSGAII(self.platypus_problem, self.population_size)
+                self.algorithm.variator = platypus.default_variator(self.platypus_problem)
+                if len(initial_population) > 0:
+                    self.algorithm.population = initial_population
+
+
+
     def ask(self):
         new_variables = []
         if self.algo_framework == 'nevergrad':
@@ -297,6 +326,21 @@ class FFParam(object):
             return new_variables
 
 
+        elif self.algo_framework == 'platypus':
+            platypus.nondominated_sort(self.algorithm.population)
+            self.algorithm.population = platypus.nondominated_truncate(self.algorithm.population, self.population_size)
+            for i in range(self.population_size):
+                parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.algorithm.population)
+                single_offspring = self.algorithm.variator.evolve(parents)
+                new_variables.append(single_offspring[0].variables[:])
+                new_variables.append(single_offspring[1].variables[:])
+            new_variables = random.sample(new_variables, self.population_size)
+
+            return new_variables
+
+
+
+
     def parameterize(self, num_epochs = None):
 
         if self.algo_framework == 'nevergrad':
@@ -356,6 +400,24 @@ class FFParam(object):
                     self.errors.append(new_errors[variable_id])
 
 
+        elif self.algo_framework == 'platypus':
+            for epoch in range(num_epochs):
+
+                self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
+
+                new_variables = self.ask()
+                new_errors = []
+                for variable in new_variables:
+                    variable_dict = dict(zip(self.variable_names, variable))
+                    error = self.error_function(variable_dict)
+                    new_errors.append(error)
+
+                for variable_id, variable in enumerate(new_variables):
+                    self.variables.append(variable)
+                    self.errors.append(new_errors[variable_id])
+
+
+
     def get_best_recommendation(self):
         best_variables = None
         best_errors = None
@@ -381,6 +443,14 @@ class FFParam(object):
             best_recommendation = self.algorithm.result()
             best_variables = best_recommendation.X
             best_errors = best_recommendation.F
+        elif self.algo_framework == 'platypus':
+            platypus.nondominated_sort(self.algorithm.population)
+            recommendation = platypus.nondominated_truncate(self.algorithm.population, self.algorithm.population_size)
+            best_variables = []
+            best_errors = []
+            for single_reco in recommendation:
+                best_variables.append(single_reco.variables[:])
+                best_errors.append(single_reco.objectives[:])
 
         return [best_variables, best_errors]
 
