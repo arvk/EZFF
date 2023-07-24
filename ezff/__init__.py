@@ -394,10 +394,19 @@ class FFParam(object):
 
                 new_variables = self.ask()
                 new_errors = []
-                for variable in new_variables:
-                    variable_dict = dict(zip(self.variable_names, variable))
-                    error = self.error_function(variable_dict)
-                    new_errors.append(error)
+
+                if self.pool is None:
+                    for variable in new_variables:
+                        variable_dict = dict(zip(self.variable_names, variable))
+                        error = self.error_function(variable_dict)
+                        new_errors.append(error)
+                else:
+                    if self.pool_type == 'mpi':
+                        if not self.pool.is_master():
+                            pool.wait()
+
+                    variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
+                    new_errors = self.pool.map(self.error_function, variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
@@ -411,10 +420,19 @@ class FFParam(object):
 
                 new_variables = self.ask()
                 new_errors = []
-                for variable in new_variables:
-                    variable_dict = dict(zip(self.variable_names, variable))
-                    error = self.error_function(variable_dict)
-                    new_errors.append(error)
+
+                if self.pool is None:
+                    for variable in new_variables:
+                        variable_dict = dict(zip(self.variable_names, variable))
+                        error = self.error_function(variable_dict)
+                        new_errors.append(error)
+                else:
+                    if self.pool_type == 'mpi':
+                        if not self.pool.is_master():
+                            pool.wait()
+
+                    variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
+                    new_errors = self.pool.map(self.error_function, variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
@@ -428,10 +446,19 @@ class FFParam(object):
 
                 new_variables = self.ask()
                 new_errors = []
-                for variable in new_variables:
-                    variable_dict = dict(zip(self.variable_names, variable))
-                    error = self.error_function(variable_dict)
-                    new_errors.append(error)
+
+                if self.pool is None:
+                    for variable in new_variables:
+                        variable_dict = dict(zip(self.variable_names, variable))
+                        error = self.error_function(variable_dict)
+                        new_errors.append(error)
+                else:
+                    if self.pool_type == 'mpi':
+                        if not self.pool.is_master():
+                            pool.wait()
+
+                    variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
+                    new_errors = self.pool.map(self.error_function, variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
