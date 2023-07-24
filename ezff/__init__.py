@@ -92,7 +92,7 @@ class FFParam(object):
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
         mobopt_algos = ['MOBO']
         pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO', 'ES_SO_PYMOO', 'NELDERMEAD_SO_PYMOO', 'CMAES_SO_PYMOO']
-        platypus_algos = ['NSGA2_MO_PLATYPUS']
+        platypus_algos = ['NSGA2_MO_PLATYPUS', 'NSGA3_MO_PLATYPUS', 'GDE3_MO_PLATYPUS']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -263,6 +263,20 @@ class FFParam(object):
                 if len(initial_population) > 0:
                     self.algorithm.population = initial_population
 
+            elif algo_string.upper() == 'NSGA3_MO_PLATYPUS':
+                # Identify number of reference points
+                min_points = [math.comb(self.num_errors + ref_pts - 1, ref_pts) for ref_pts in range(200)]
+                num_reference_points = np.sum(np.array(min_points) < self.population_size)
+                self.algorithm = platypus.NSGAIII(self.platypus_problem, divisions_outer = num_reference_points)
+                self.algorithm.variator = platypus.default_variator(self.platypus_problem)
+                if len(initial_population) > 0:
+                    self.algorithm.population = initial_population
+
+            if algo_string.upper() == 'GDE3_MO_PLATYPUS':
+                self.algorithm = platypus.GDE3(self.platypus_problem, population_size = self.population_size)
+                if len(initial_population) > 0:
+                    self.algorithm.population = initial_population
+
 
 
     def ask(self):
@@ -327,14 +341,32 @@ class FFParam(object):
 
 
         elif self.algo_framework == 'platypus':
-            platypus.nondominated_sort(self.algorithm.population)
-            self.algorithm.population = platypus.nondominated_truncate(self.algorithm.population, self.population_size)
-            for i in range(self.population_size):
-                parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.algorithm.population)
-                single_offspring = self.algorithm.variator.evolve(parents)
-                new_variables.append(single_offspring[0].variables[:])
-                new_variables.append(single_offspring[1].variables[:])
-            new_variables = random.sample(new_variables, self.population_size)
+            if self.algo_string.upper() == 'NSGA2_MO_PLATYPUS':
+                platypus.nondominated_sort(self.algorithm.population)
+                self.algorithm.population = platypus.nondominated_truncate(self.algorithm.population, self.population_size)
+                for i in range(self.population_size):
+                    parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.algorithm.population)
+                    single_offspring = self.algorithm.variator.evolve(parents)
+                    new_variables.append(single_offspring[0].variables[:])
+                    new_variables.append(single_offspring[1].variables[:])
+                new_variables = random.sample(new_variables, self.population_size)
+            elif self.algo_string.upper() == 'NSGA3_MO_PLATYPUS':
+                platypus.nondominated_sort(self.algorithm.population)
+                self.algorithm.population = self.algorithm._reference_point_truncate(self.algorithm.population, self.population_size)
+                for i in range(self.population_size):
+                    parents = self.algorithm.selector.select(self.algorithm.variator.arity, self.algorithm.population)
+                    single_offspring = self.algorithm.variator.evolve(parents)
+                    new_variables.append(single_offspring[0].variables[:])
+                    new_variables.append(single_offspring[1].variables[:])
+                new_variables = random.sample(new_variables, self.population_size)
+            elif self.algo_string.upper() == 'GDE3_MO_PLATYPUS':
+                self.algorithm.population = self.algorithm.survival(self.algorithm.population)
+                for i in range(self.population_size):
+                    parents = self.algorithm.select(i, self.algorithm.variator.arity)
+                    single_offspring = self.algorithm.variator.evolve(parents)
+                    new_variables.append(single_offspring[0].variables[:])
+                #     new_variables.append(single_offspring[1].variables[:])
+                # new_variables = random.sample(list(set(new_variables)), self.population_size)
 
             return new_variables
 
@@ -448,6 +480,7 @@ class FFParam(object):
             recommendation = platypus.nondominated_truncate(self.algorithm.population, self.algorithm.population_size)
             best_variables = []
             best_errors = []
+            recommendation = list(set(recommendation))   # Remove duplicates
             for single_reco in recommendation:
                 best_variables.append(single_reco.variables[:])
                 best_errors.append(single_reco.objectives[:])
