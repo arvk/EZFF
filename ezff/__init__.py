@@ -29,6 +29,7 @@ from pymoo.algorithms.moo.rvea import RVEA as pymoo_RVEA
 from pymoo.termination.max_eval import MaximumFunctionCallTermination
 from pymoo.algorithms.soo.nonconvex.es import ES as pymoo_ES
 from pymoo.algorithms.soo.nonconvex.nelder import NelderMead as pymoo_NelderMead
+from pymoo.algorithms.soo.nonconvex.cmaes import CMAES as pymoo_CMAES
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -87,7 +88,7 @@ class FFParam(object):
 
         ng_algos = ['NGOPT_SO', 'TWOPOINTSDE_SO','PORTFOLIODISCRETEONEPLUSONE_SO','ONEPLUSONE_SO','CMA_SO','TBPSA_SO', 'PSO_SO', 'SCRHAMMERSLEYSEARCHPLUSMIDDLEPOINT_SO', 'RANDOMSEARCH_SO']
         mobopt_algos = ['MOBO']
-        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO', 'ES_SO_PYMOO', 'NELDERMEAD_SO_PYMOO']
+        pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO', 'ES_SO_PYMOO', 'NELDERMEAD_SO_PYMOO', 'CMAES_SO_PYMOO']
 
         if algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
@@ -225,6 +226,15 @@ class FFParam(object):
                     self.algorithm.pop = initial_population
                 self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
 
+            elif algo_string.upper() == 'CMAES_SO_PYMOO':
+                x0_search = np.mean(self.variables, axis=0)
+                if initial_population == []:
+                    self.algorithm = pymoo_CMAES(x0 = x0_search)
+                else:
+                    initial_population = pymoo_Population(initial_population)
+                    self.algorithm = pymoo_CMAES(x0 = x0_search)
+                    self.algorithm.pop = initial_population
+                self.algorithm.setup(self.pymoo_problem, seed = np.random.randint(100000), verbose = False)
 
     def ask(self):
         new_variables = []
