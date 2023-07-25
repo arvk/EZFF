@@ -40,6 +40,8 @@ from schwimmbad import MPIPool as sch_MPIPool
 from mpi4py import MPI
 import multiprocessing
 
+from datetime import datetime
+
 
 __version__ = '0.9.4' # Update setup.py if version changes
 
@@ -540,7 +542,6 @@ class FFParam(object):
         return [best_variables, best_errors]
 
 
-
     def generate_pool(self, string):
         if string == 'multi':
             self.pool_type = 'multi'
@@ -549,6 +550,20 @@ class FFParam(object):
             self.pool_type = 'mpi'
             return sch_MPIPool()
 
+    def save_evaluated(self,filename):
+        timestamp = datetime.now().strftime("%y%m%d_%H%M")
+        filename = filename+timestamp+'.npz'
+        np.savez(filename, variables=np.array(self.variables), errors=np.array(self.errors))
+
+    def load_evaluated(self,filename):
+        fileobj = np.load(filename)
+        vars = fileobj['variables']
+        errs = fileobj['errors']
+        for varid, var in enumerate(vars):
+            self.variables.append(var)
+            self.errors.append(errs[varid])
+
+
 def get_pool_rank(string):
     if string == 'multi':
         return multiprocessing.current_process()._identity[0]
@@ -556,6 +571,7 @@ def get_pool_rank(string):
         return MPI.COMM_WORLD.Get_rank()
     else:
         return '0'
+
 
 
 class OptProblem(Problem):
