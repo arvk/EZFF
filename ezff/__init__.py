@@ -64,6 +64,7 @@ class FFParam(object):
         self.relative_weights = np.array([1.0 for i in range(num_errors)])
         self.variables = []
         self.errors = []
+        self.total_epochs = 0
 
     def read_variable_bounds(self, filename):
         """Read permissible lower and upper bounds for decision variables used in forcefields optimization
@@ -386,6 +387,8 @@ class FFParam(object):
         if self.algo_framework == 'nevergrad':
             for epoch in range(num_epochs):
 
+                self.total_epochs += 1
+
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
                 for computed_id, computed in enumerate(self.variables):
@@ -414,9 +417,13 @@ class FFParam(object):
                     self.variables.append(variable)
                     self.errors.append(new_errors[variable_id])
 
+                self._write_out_forcefields()
+
 
         elif self.algo_framework == 'mobopt':
             for epoch in range(num_epochs):
+
+                self.total_epochs += 1
 
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
@@ -439,11 +446,15 @@ class FFParam(object):
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
                     self.errors.append(new_errors[variable_id])
+
+                self._write_out_forcefields()
 
 
         elif self.algo_framework == 'pymoo':
             for epoch in range(num_epochs):
 
+                self.total_epochs += 1
+
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
                 new_variables = self.ask()
@@ -465,11 +476,15 @@ class FFParam(object):
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
                     self.errors.append(new_errors[variable_id])
+
+                self._write_out_forcefields()
 
 
         elif self.algo_framework == 'platypus':
             for epoch in range(num_epochs):
 
+                self.total_epochs += 1
+
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
                 new_variables = self.ask()
@@ -501,6 +516,48 @@ class FFParam(object):
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
                     self.errors.append(new_errors[variable_id])
+
+                self._write_out_forcefields()
+
+
+
+    def _write_out_forcefields(self):
+        print('Epoch: '+ str(self.total_epochs))
+
+        if not (self.algo_string.upper() == 'RANDOMSEARCH_SO'):
+            # Make output files/directories
+            outdir = 'results/' + str(self.total_epochs)
+            if not os.path.isdir(outdir):
+                os.makedirs(outdir)
+
+            varfilename = outdir + '/variables'
+            errfilename = outdir + '/errors'
+            varfile = open(varfilename, 'w')
+            errfile = open(errfilename, 'w')
+
+            reco_vars, reco_errs = self.get_best_recommendation()
+
+            for reco_id, reco_var in enumerate(reco_vars):
+                varfile.write(' '.join([str(variable) for variable in reco_var]))
+                varfile.write('\n')
+                errfile.write(' '.join([str(error) for error in reco_errs[reco_id]]))
+                errfile.write('\n')
+            varfile.close()
+            errfile.close()
+
+            all_evaluated_filename = outdir + '/all_evaluated.npz'
+            self.save_evaluated(all_evaluated_filename)
+
+            if self.total_epochs % 5 == 0:
+                if not os.path.isdir(outdir+'/forcefields'):
+                    os.makedirs(outdir+'/forcefields')
+                for reco_id, reco_var in enumerate(reco_vars):
+                #for sol_index, solution in enumerate(unique(nondominated(algorithm_for_this_stage.result))):
+                    ff_name = outdir + '/forcefields/FF_' + str(reco_id+1)
+                    parameters_dict = dict(zip(self.variable_names, reco_var))
+                    generate_forcefield(self.forcefield_template, parameters_dict, outfile=ff_name)
+
+
 
 
 
