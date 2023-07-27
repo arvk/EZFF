@@ -561,6 +561,7 @@ class FFParam(object):
 
 
 
+
     def get_best_recommendation(self):
         best_variables = None
         best_errors = None
@@ -619,6 +620,18 @@ class FFParam(object):
         for varid, var in enumerate(vars):
             self.variables.append(var)
             self.errors.append(errs[varid])
+
+
+    def normalize_errors(self, scale = 2.0):
+        maximums = np.max(self.errors, axis=0)
+        minumums = np.min(self.errors, axis=0)
+        self.normalized_errors = []
+        for var in self.errors:
+            if np.any(np.isnan(var)):
+                self.normalized_errors.append(maximums * scale)
+            else:
+                self.normalized_errors.append(var)
+
 
 
 def get_pool_rank(string):
