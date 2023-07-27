@@ -31,7 +31,7 @@ def error_phonon_dispersion(MD=None, GT=None, weights='uniform', verbose=False):
     # Perform sanity check. Number of bands should be equal between the two structures
     if not len(MD) == len(GT):
         raise ValueError("MD and ground truth dispersions have different number of bands")
-        return
+        return np.nan
 
     # Create array of weights - one value per band
     num_band = len(MD)
@@ -47,14 +47,18 @@ def error_phonon_dispersion(MD=None, GT=None, weights='uniform', verbose=False):
             raise ValueError("Number of provided weight values is different from number of bands! Aborting")
 
     # Compute the RMS error between dispersions
-    rms_error = 0.0
-    num_k_gt = len(GT[0])
-    scaling = num_k_gt/100.0
-    for band_index in range(0, len(GT)):
-        interp_md_band = np.interp(np.arange(0, num_k_gt), np.arange(0, 100)*scaling, MD[band_index])
-        rms_error += np.linalg.norm(interp_md_band - GT[band_index]) * W[band_index]
+    try:
+        rms_error = 0.0
+        num_k_gt = len(GT[0])
+        scaling = num_k_gt/100.0
+        for band_index in range(0, len(GT)):
+            interp_md_band = np.interp(np.arange(0, num_k_gt), np.arange(0, 100)*scaling, MD[band_index])
+            rms_error += np.linalg.norm(interp_md_band - GT[band_index]) * W[band_index]
 
-    rms_error /= (num_k_gt * num_band)
+        rms_error /= (num_k_gt * num_band)
+    except:
+        rms_error = np.nan
+
     return rms_error
 
 
@@ -72,23 +76,26 @@ def error_structure_distortion(MD=None, GT=None):
     # Sanity checks -- Both inputs should be AtTraj objects
     if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
         print('ERROR_STRUCTURE_DISTORTION: Please provide xtal.AtTraj objects for comparison')
-        return
+        return np.nan
 
     if not (len(GT.snaplist) == len(MD.snaplist)):
         print('Different number of structures in MD and Ground-Truth data')
+        return np.nan
 
     if not np.allclose(MD.box, GT.box):
         print('ERROR: Cell sizes and shapes are different for MD and ground-truth. Please use error_lattice_constant instead')
-        return 0.0
+        return np.nan
 
-    error = 0.0
-
-    for snapID in range(len(GT.snaplist)):
-        errors_this_snapshot = []
-        for atomID in range(len(GT.snaplist[snapID].atomlist)):
-            error_this_atom = np.linalg.norm(GT.snaplist[snapID].atomlist[atomID].cart - MD.snaplist[snapID].atomlist[atomID].cart)
-            errors_this_snapshot.append(error_this_atom)
-        error += np.linalg.norm(np.array(errors_this_snapshot))
+    try:
+        error = 0.0
+        for snapID in range(len(GT.snaplist)):
+            errors_this_snapshot = []
+            for atomID in range(len(GT.snaplist[snapID].atomlist)):
+                error_this_atom = np.linalg.norm(GT.snaplist[snapID].atomlist[atomID].cart - MD.snaplist[snapID].atomlist[atomID].cart)
+                errors_this_snapshot.append(error_this_atom)
+            error += np.linalg.norm(np.array(errors_this_snapshot))
+    except:
+        error = np.nan
 
     return error
 
@@ -109,12 +116,16 @@ def error_lattice_constant(MD=None, GT=None):
         print('ERROR_LATTICE_CONSTANT: Please provide xtal.AtTraj objects for comparison')
         return
 
-    MD.make_dircar_matrices()
-    GT.make_dircar_matrices()
-    MD.box_to_abc()
-    GT.box_to_abc()
-    abc = MD.abc - GT.abc
-    ang = MD.ang - GT.ang
+    try:
+        MD.make_dircar_matrices()
+        GT.make_dircar_matrices()
+        MD.box_to_abc()
+        GT.box_to_abc()
+        abc = MD.abc - GT.abc
+        ang = MD.ang - GT.ang
+    except:
+        abc = np.array([np.nan, np.nan, np.nan])
+        ang = np.array([np.nan, np.nan, np.nan])
 
     return abc, ang
 
@@ -133,16 +144,20 @@ def error_atomic_charges(MD=None, GT=None):
     # Sanity checks -- Both inputs should be AtTraj objects
     if not isinstance(MD, xtal.AtTraj) and isinstance(GT, xtal.AtTraj):
         print('ERROR_ATOMIC_CHARGES: Please provide xtal.AtTraj objects for comparison')
-        return
+        return np.nan
 
     if not (len(GT.snaplist) == len(MD.snaplist)):
         print('Different number of structures in MD and Ground-Truth data')
+        return np.nan
 
     error_array = []
     for snapID in range(len(GT.snaplist)):
         GT_charges = np.array([atom.charge for atom in GT.snaplist[snapID].atomlist])
         MD_charges = np.array([atom.charge for atom in MD.snaplist[snapID].atomlist])
-        error_this_snapshot = np.linalg.norm(GT_charges - MD_charges)
+        try:
+            error_this_snapshot = np.linalg.norm(GT_charges - MD_charges)
+        except:
+            return np.nan
         error_array.append(error_this_snapshot)
 
     return np.sum(error_array)
@@ -196,5 +211,9 @@ def error_energy(MD, GT, weights='uniform', verbose=False):
             raise ValueError("Weights array and PES have different number of points! Aborting")
 
     # Compute the RMS error between PES
-    rms_error = np.linalg.norm((MD - GT) * W)
+    try:
+        rms_error = np.linalg.norm((MD - GT) * W)
+    except:
+        rms_error = np.nan
+
     return rms_error
