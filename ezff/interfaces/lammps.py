@@ -33,6 +33,7 @@ class job:
         self.dumpfile = os.path.join(os.path.abspath(path), 'out.dump')
         self.structfile = os.path.join(os.path.abspath(path), 'input.structure')
         self.structure = None
+        self.forcefieldfile = os.path.join(os.path.abspath(path), 'generated_forcefield')
         self.forcefield = ''
         self.options = {
             "relax_atoms": False,
@@ -43,6 +44,7 @@ class job:
             "phonon_dispersion_from": None,
             "phonon_dispersion_to": None
             }
+        self.pbc = True
         self.verbose = verbose
         if verbose:
             print('Created a new LAMMPS job')
@@ -52,6 +54,77 @@ class job:
         self.options['fftype'] = FFtype.upper()
         forcefield = gen_ff(template_string, parameters, FFtype = FFtype, outfile = outfile, MD = 'LAMMPS')
         return forcefield
+
+
+
+
+    def run_static(self, command = None, timeout = None):
+        """
+        Execute LAMMPS job with user-defined parameters
+
+        :param command: path to LAMMPS executable
+        :type command: str
+
+        :param timeout: LAMMPS job is automatically killed after ``timeout`` seconds
+        :type timeout: int
+        """
+        self._pre_job_cleanup()
+        for snapID, snapshot in enumerate(self.structure.snaplist):
+            self._write_structure_file(snapID)
+            self._write_script_file_static()
+            self._run_loop(command = command, timeout = timeout)
+        self._post_job_cleanup()
+
+
+
+    def run_relax(self, command = None, timeout = None):
+        """
+        Execute LAMMPS job with user-defined parameters
+
+        :param command: path to LAMMPS executable
+        :type command: str
+
+        :param timeout: LAMMPS job is automatically killed after ``timeout`` seconds
+        :type timeout: int
+        """
+        self._pre_job_cleanup()
+        for snapID, snapshot in enumerate(self.structure.snaplist):
+            self._write_structure_file(snapID)
+            self._write_script_file_relax()
+            self._run_loop(command = command, timeout = timeout)
+        self._post_job_cleanup()
+
+
+    def _pre_job_cleanup(self):
+        os.system('cd '+ self.path + ' ; rm -f ' + self.outfile)
+
+
+    def _run_loop(self, command = None, timeout = None):
+        outfile_single_snapshot = self.outfile + '_temp'
+
+        system_call_command = command + ' -in ' + self.scriptfile + ' > ' + outfile_single_snapshot + ' 2> ' + self.outfile + '.runerror'
+
+        if timeout is not None:
+            system_call_command = 'timeout ' + str(timeout) + ' ' + system_call_command
+
+        if self.verbose:
+            print('cd '+ self.path + ' ; ' + system_call_command)
+        os.system('cd '+ self.path + ' ; ' + system_call_command)
+
+        # Append output to the job outfile and structure to job structurefile
+        os.system('cat ' + outfile_single_snapshot + ' >> ' + self.outfile)
+        os.system('cat ' + os.path.join(os.path.abspath(self.path), 'tempdumpfile') + ' >> ' + self.dumpfile)
+        os.system('rm -f ' + os.path.join(os.path.abspath(self.path), 'tempdumpfile'))
+        os.system('rm -f ' + outfile_single_snapshot)
+
+
+    def _post_job_cleanup(self):
+        files_to_be_removed = [self.outfile+'.disp', self.outfile+'.dens', self.outfile, self.scriptfile, self.outfile+'.runerror']
+        for file_to_be_removed in files_to_be_removed:
+            abs_file_to_be_removed = os.path.join(os.path.abspath(self.path), file_to_be_removed)
+            os.system('cd '+ self.path + ' ; rm -f ' + abs_file_to_be_removed)
+
+
 
 
     def run(self, command = None, timeout = None):
@@ -165,17 +238,50 @@ class job:
         fffile.close()
 
 
-    def _write_script_file(self):
-        """
-        Write-out a complete LAMMPS script file, ``job.scriptfile``, based on job parameters
-        """
-        opts = self.options
-        script = open(self.scriptfile,'w')
+        script.write('read_data input.structure \n')
+        script.write('pair_style ' + fftype_pairstyle[opts['fftype']] + '\n')
+        script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
 
+        ## Define a universal thermo style and dump information every step
+        script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
+        script.write('thermo 1000 \n')
+
+        script.write('variable ezff_T equal temp \n')
+        script.write('variable ezff_V equal vol \n')
+        script.write('variable ezff_E equal etotal \n')
+
+        script.write('run 0 \n')
+
+        script.write('\n')
+        script.write('\n')
+
+
+
+    def _include_forcefield(self, fftype):
         # Convert FFtype to pair_style
         fftype_pairstyle = {'SW': 'sw', 'STILLINGER-WEBER': 'sw', 'STILLINGER WEBER': 'sw',
                             'REAX': 'reax/c NULL', 'REAXFF': 'reax/c NULL', 'REAX/C': 'reax/c NULL',
                             'VASHISHTA': 'vashishta'}
+        return_string = ''
+        if self.options['fftype'].upper() == 'LJ':
+            return_string = 'include generated_forcefield \n'
+            f = open(self.forcefieldfile, 'w')
+            f.write(self.forcefield)
+            f.close()
+        else:
+            return_string = 'pair_style ' + fftype_pairstyle[self.options['fftype']] + '\n'
+            return_string += 'pair_coeff * * ff.lmp ' + ' '.join(self.options['atom_sequence']).title() + '\n'
+        return return_string
+
+
+
+
+
+
+
+    def _write_script_file_static(self):
+        opts = self.options
+        script = open(self.scriptfile,'w')
 
         script.write('units metal \n')  # All simulations will be performed in LAMMPS metal units
         script.write('dimension 3 \n')  # All simulations will be 3D
@@ -187,8 +293,114 @@ class job:
             script.write('boundary fm fm fm \n')
 
         script.write('read_data input.structure \n')
-        script.write('pair_style ' + fftype_pairstyle[opts['fftype']] + '\n')
-        script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
+
+        ff_include_string = self._include_forcefield(self.options['fftype'])
+        script.write(ff_include_string)
+
+        ## Define a universal thermo style and dump information every step
+        script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
+        script.write('thermo 1000 \n')
+
+        script.write('variable ezff_T equal temp \n')
+        script.write('variable ezff_V equal vol \n')
+        script.write('variable ezff_E equal etotal \n')
+
+        script.write('run 0 \n')
+
+        script.write('\n')
+        script.write('\n')
+
+        # Write out the summary
+        script.write('write_dump all custom tempdumpfile id type element mass q x y z vx vy vz fx fy fz modify sort id element ' + ' '.join(opts['atom_sequence']).title() + ' \n')
+
+        script.write('print "-----SUMMARY-----" \n')
+        script.write('print "EZFF_TEMP ${ezff_T}" \n')
+        script.write('print "EZFF_VOL ${ezff_V}" \n')
+        script.write('print "EZFF_ENERGY ${ezff_E}" \n')
+
+
+
+
+
+
+
+    def _write_script_file_relax(self):
+        opts = self.options
+        script = open(self.scriptfile,'w')
+
+        script.write('units metal \n')  # All simulations will be performed in LAMMPS metal units
+        script.write('dimension 3 \n')  # All simulations will be 3D
+        script.write('atom_style charge \n')
+
+        if opts['pbc']:
+            script.write('boundary p p p \n')
+        else:
+            script.write('boundary fm fm fm \n')
+
+        script.write('read_data input.structure \n')
+
+        ff_include_string = self._include_forcefield(self.options['fftype'])
+        script.write(ff_include_string)
+
+        ## Define a universal thermo style and dump information every step
+        script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
+        script.write('thermo 1000 \n')
+
+        script.write('variable ezff_T equal temp \n')
+        script.write('variable ezff_V equal vol \n')
+        script.write('variable ezff_E equal etotal \n')
+
+        if opts['relax_cell']:
+            script.write('fix FixBoxRelax all box/relax aniso 0.0 \n')
+        script.write('minimize 0.0 1.0e-8 1000 100000 \n')
+
+        script.write('run 0 \n')
+
+        script.write('\n')
+        script.write('\n')
+
+        # Write out the summary
+        script.write('write_dump all custom tempdumpfile id type element mass q x y z vx vy vz fx fy fz modify sort id element ' + ' '.join(opts['atom_sequence']).title() + ' \n')
+
+        script.write('print "-----SUMMARY-----" \n')
+        script.write('print "EZFF_TEMP ${ezff_T}" \n')
+        script.write('print "EZFF_VOL ${ezff_V}" \n')
+        script.write('print "EZFF_ENERGY ${ezff_E}" \n')
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def _write_script_file(self):
+        """
+        Write-out a complete LAMMPS script file, ``job.scriptfile``, based on job parameters
+        """
+        opts = self.options
+        script = open(self.scriptfile,'w')
+
+        script.write('units metal \n')  # All simulations will be performed in LAMMPS metal units
+        script.write('dimension 3 \n')  # All simulations will be 3D
+        script.write('atom_style charge \n')
+
+        if opts['pbc']:
+            script.write('boundary p p p \n')
+        else:
+            script.write('boundary fm fm fm \n')
+
+        script.write('read_data input.structure \n')
+
+        ff_include_string = self._include_forcefield(self.options['fftype'])
+        script.write(ff_include_string)
+        # script.write('pair_style ' + fftype_pairstyle[opts['fftype']] + '\n')
+        # script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
 
         ## Define a universal thermo style and dump information every step
         script.write('thermo_style custom step temp pxx pyy pzz pxy pxz pyz pe ke etotal vol xlo xhi ylo yhi zlo zhi xy xz yz press lx ly lz \n')
@@ -218,7 +430,8 @@ class job:
 
         # SCRIPTS TO COMPUTE ELASTIC CONSTANT
         # ADOPTED FROM THE ELASTIC EXAMPLE IN LAMMPS DIRECTORY
-        if opts['pbc']:
+        #if opts['pbc']:
+        if 1==2:
             displace_script = open(os.path.join(os.path.abspath(self.path), 'displace.mod'), 'w')
 
             displace_script.write('clear\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nif "${dir} == 1" then &\n   "variable len0 equal ${lx0}"\nif "${dir} == 2" then &\n   "variable len0 equal ${ly0}"\nif "${dir} == 3" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 4" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 5" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 6" then &\n   "variable len0 equal ${ly0}"\nbox tilt large\nread_restart restart.equil\n')
@@ -256,7 +469,7 @@ class job:
         """
         Clean-up after the completion of a GULP job. Deletes input, output and forcefields files
         """
-        files_to_be_removed = [self.outfile+'.disp', self.outfile+'.dens', self.outfile, self.scriptfile, self.outfile+'.runerror']
+        files_to_be_removed = [self.outfile+'.disp', self.outfile+'.dens', self.outfile, self.scriptfile, self.outfile+'.runerror', self.structfile, self.forcefieldfile, self.dumpfile]
         for file in files_to_be_removed:
             if os.path.isfile(file):
                 os.remove(file)
