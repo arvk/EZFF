@@ -152,7 +152,7 @@ class FFParam(object):
             for varid, var in enumerate(self.variables):
                 evaledsoln = pymoo_Individual()
                 evaledsoln._X = var
-                evaledsoln._F = self.errors[varid]
+                evaledsoln._F = self.normalized_errors[varid]
                 initial_population.append(evaledsoln)
 
             if algo_string.upper() == 'NSGA2_MO_PYMOO':
@@ -260,11 +260,12 @@ class FFParam(object):
             self.platypus_problem = platypus.Problem(self.num_variables, self.num_errors)
             self.platypus_problem.types = [platypus.Real(var_mins[i], var_maxs[i]) for i in range(self.num_variables)]
 
+            self.normalize_errors()
             initial_population = []
             for varid, var in enumerate(self.variables):
                 evaledsoln = platypus.Solution(self.platypus_problem)
                 evaledsoln.variables[:] = list(var)
-                evaledsoln.objectives[:] = list(self.errors[varid])
+                evaledsoln.objectives[:] = list(self.normalized_errors[varid])
                 initial_population.append(evaledsoln)
 
             if algo_string.upper() == 'NSGA2_MO_PLATYPUS':
@@ -303,7 +304,7 @@ class FFParam(object):
             prob = 0.1
 
             for pointID in range(len(self.variables)):
-                self.algorithm.space.add_observation(np.array(self.variables[pointID]), 0.0 - np.array(self.errors[pointID]))
+                self.algorithm.space.add_observation(np.array(self.variables[pointID]), 0.0 - np.array(self.normalized_errors[pointID]))
 
             for i in range(self.num_errors):
                 yy = self.algorithm.space.f[:, i]
@@ -388,6 +389,7 @@ class FFParam(object):
             for epoch in range(num_epochs):
 
                 self.total_epochs += 1
+                self.normalize_errors()
 
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
@@ -395,7 +397,7 @@ class FFParam(object):
                     computed_value = {k:v for (k,v) in zip(self.variable_names,computed)}
                     self.algorithm.suggest(computed_value)
                     asked_suggestion = self.algorithm.ask()
-                    self.algorithm.tell(asked_suggestion, self.errors[computed_id])
+                    self.algorithm.tell(asked_suggestion, self.normalized_errors[computed_id])
 
                 new_variables = self.ask()
                 new_errors = []
@@ -424,6 +426,7 @@ class FFParam(object):
             for epoch in range(num_epochs):
 
                 self.total_epochs += 1
+                self.normalize_errors()
 
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
@@ -454,6 +457,7 @@ class FFParam(object):
             for epoch in range(num_epochs):
 
                 self.total_epochs += 1
+                self.normalize_errors()
 
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
@@ -484,6 +488,7 @@ class FFParam(object):
             for epoch in range(num_epochs):
 
                 self.total_epochs += 1
+                self.normalize_errors()
 
                 self.set_algorithm(algo_string = self.algo_string, population_size = self.population_size)
 
@@ -576,7 +581,7 @@ class FFParam(object):
             for varid, var in enumerate(self.variables):
                 evaledsoln = pymoo_Individual()
                 evaledsoln._X = var
-                evaledsoln._F = self.errors[varid]
+                evaledsoln._F = self.normalized_errors[varid]
                 initial_population.append(evaledsoln)
             initial_population = pymoo_Population(initial_population)
             if '_SO_' in self.algo_string:
@@ -623,14 +628,17 @@ class FFParam(object):
 
 
     def normalize_errors(self, scale = 2.0):
-        maximums = np.max(self.errors, axis=0)
-        minumums = np.min(self.errors, axis=0)
         self.normalized_errors = []
-        for var in self.errors:
-            if np.any(np.isnan(var)):
-                self.normalized_errors.append(maximums * scale)
-            else:
-                self.normalized_errors.append(var)
+        if len(self.errors) > 0:
+            maximums = np.nanmax(self.errors, axis=0)
+            maximums[np.isnan(maximums)] = 100.0
+            for var in self.errors:
+                if np.any(np.isnan(var)):
+                    self.normalized_errors.append(maximums * scale)
+                else:
+                    self.normalized_errors.append(var)
+
+        self.normalized_errors = np.array(self.normalized_errors)
 
 
 
