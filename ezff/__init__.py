@@ -594,7 +594,7 @@ class FFParam(object):
             best_errors = best_recommendation.F
         elif self.algo_framework == 'platypus':
             platypus.nondominated_sort(self.algorithm.population)
-            recommendation = platypus.nondominated_truncate(self.algorithm.population, self.algorithm.population_size)
+            recommendation = platypus.unique(platypus.nondominated(self.algorithm.population))
             best_variables = []
             best_errors = []
             recommendation = list(set(recommendation))   # Remove duplicates
