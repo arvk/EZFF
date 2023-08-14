@@ -550,7 +550,7 @@ class FFParam(object):
             varfile.close()
             errfile.close()
 
-            all_evaluated_filename = outdir + '/all_evaluated.npz'
+            all_evaluated_filename = outdir + '/all_evaluated_'
             self.save_evaluated(all_evaluated_filename)
 
             if self.total_epochs % 5 == 0:
@@ -614,7 +614,7 @@ class FFParam(object):
             return sch_MPIPool()
 
     def save_evaluated(self,filename):
-        timestamp = datetime.now().strftime("%y%m%d_%H%M")
+        timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
         filename = filename+timestamp+'.npz'
         np.savez(filename, variables=np.array(self.variables), errors=np.array(self.errors))
 
