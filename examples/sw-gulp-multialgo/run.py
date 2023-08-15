@@ -36,7 +36,7 @@ def my_error_function(variable_values):
     relaxed_job.options['phonon_dispersion_from'] = '0 0 0'
     relaxed_job.options['phonon_dispersion_to'] = '0.5 0.5 0'
     # Submit job and read output
-    relaxed_job.run(command='/Users/akrishnamoorthy/Software/gulp-4.4/Src/gulp')
+    relaxed_job.run()
     # Read output from completed GULP job and cleanup job files
     md_relax_disp_GS = relaxed_job.read_phonon_dispersion()
     md_relaxed_moduli = relaxed_job.read_elastic_moduli()
@@ -56,7 +56,7 @@ def my_error_function(variable_values):
     compressed_job.options['phonon_dispersion_from'] = '0 0 0'
     compressed_job.options['phonon_dispersion_to'] = '0.5 0.5 0'
     # Submit job and read output
-    compressed_job.run(command='/Users/akrishnamoorthy/Software/gulp-4.4/Src/gulp')
+    compressed_job.run()
     # Read output from completed GULP job and cleanup job files
     md_compressed_disp_GS = compressed_job.read_phonon_dispersion()
     compressed_job.cleanup()  # FINISH COMPRESSED JOB
@@ -74,7 +74,7 @@ def my_error_function(variable_values):
     expanded_job.options['phonon_dispersion_from'] = '0 0 0'
     expanded_job.options['phonon_dispersion_to'] = '0.5 0.5 0'
     # Submit job and read output
-    expanded_job.run(command='/Users/akrishnamoorthy/Software/gulp-4.4/Src/gulp')
+    expanded_job.run()
     # Read output from completed GULP job and cleanup job files
     md_expanded_disp_GS = expanded_job.read_phonon_dispersion()
     expanded_job.cleanup()  # FINISH EXPANDED JOB
