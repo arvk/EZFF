@@ -1,0 +1,33 @@
+# These entries are in LAMMPS "metal" units:
+#   H = eV*Angstroms^eta; Zi, Zj = |e| (e = electronic charge);
+#   lambda1, lambda4, rc, r0, gamma = Angstroms;
+#   D = eV*Angstroms^4; W = eV*Angstroms^6; B = eV;
+#   other quantities are unitless
+#
+# element1  element2  element3
+#           H  eta  Zi  Zj  lambda1  D  lambda4
+#           W  rc  B  gamma  r0  C  cos(theta)
+
+C   C    C  <<H_CC>>  7  -1.201  -1.201  5.0  0.0  3.0
+            0.0  7.35  0.0  0.0  0.0  0.0  0.0
+
+Si  Si  Si  <<H_SiSi>>  7  1.201  1.201  5.0  15.575  3.0
+            0.0  7.35  0.0  0.0  0.0  0.0  0.0
+
+C   Si  Si  <<H_SiC>>  9  -1.201  1.201  5.0  7.7874  3.0
+            61.4694  7.35  <<B_SiC>>  1.0  <<r_SiC>>  5.0  -0.333333333333
+
+Si  C   C   <<H_SiC>>  9  1.201  -1.201  5.0  7.7874  3.0
+            61.4694  7.35  <<B_SiC>>  1.0  <<r_SiC>>  5.0  -0.333333333333
+
+C   C   Si  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+            0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+C   Si  C   0.0  0.0  0.0  0.0  0.0  0.0  0.0
+            0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+Si  C   Si  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+            0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+Si  Si  C   0.0  0.0  0.0  0.0  0.0  0.0  0.0
+            0.0  0.0  0.0  0.0  0.0  0.0  0.0
