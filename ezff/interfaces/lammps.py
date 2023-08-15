@@ -297,6 +297,12 @@ class job:
             f = open(self.forcefieldfile, 'w')
             f.write(self.forcefield)
             f.close()
+        elif self.options['fftype'].upper() == 'VASHISHTA':
+            return_string = 'pair_style vashishta \n'
+            return_string +=  'pair_coeff * * ' + self.forcefieldfile  + ' ' + ' '.join(self.options['atom_sequence']).title() + '\n'
+            f = open(self.forcefieldfile, 'w')
+            f.write(self.forcefield)
+            f.close()
         else:
             return_string = 'pair_style ' + fftype_pairstyle[self.options['fftype']] + '\n'
             return_string += 'pair_coeff * * ff.lmp ' + ' '.join(self.options['atom_sequence']).title() + '\n'
@@ -460,7 +466,7 @@ class job:
         if opts['pbc']:
             displace_script = open(os.path.join(os.path.abspath(self.path), 'displace.mod'), 'w')
 
-            displace_script.write('clear\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string Bars\nif "${dir} == 1" then &\n   "variable len0 equal ${lx0}"\nif "${dir} == 2" then &\n   "variable len0 equal ${ly0}"\nif "${dir} == 3" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 4" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 5" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 6" then &\n   "variable len0 equal ${ly0}"\nbox tilt large\nread_restart restart.equil\n')
+            displace_script.write('clear\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nif "${dir} == 1" then &\n   "variable len0 equal ${lx0}"\nif "${dir} == 2" then &\n   "variable len0 equal ${ly0}"\nif "${dir} == 3" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 4" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 5" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 6" then &\n   "variable len0 equal ${ly0}"\nbox tilt large\nread_restart restart.equil\n')
 
             ff_include_string = self._include_forcefield(self.options['fftype'])
             displace_script.write(ff_include_string)
@@ -482,7 +488,7 @@ class job:
 
             displace_script.close()
 
-            script.write('\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string Bars\nvariable tmp equal pxx\nvariable pxx0 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy0 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz0 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz0 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz0 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy0 equal ${tmp}\nvariable tmp equal lx\nvariable lx0 equal ${tmp}\nvariable tmp equal ly\nvariable ly0 equal ${tmp}\nvariable tmp equal lz\nvariable lz0 equal ${tmp}\n# These formulas define the derivatives w.r.t. strain components\n# Constants uses $, variables use v_\nvariable d1 equal -(v_pxx1-${pxx0})/(v_delta/v_len0)*${cfac}\nvariable d2 equal -(v_pyy1-${pyy0})/(v_delta/v_len0)*${cfac}\nvariable d3 equal -(v_pzz1-${pzz0})/(v_delta/v_len0)*${cfac}\nvariable d4 equal -(v_pyz1-${pyz0})/(v_delta/v_len0)*${cfac}\nvariable d5 equal -(v_pxz1-${pxz0})/(v_delta/v_len0)*${cfac}\nvariable d6 equal -(v_pxy1-${pxy0})/(v_delta/v_len0)*${cfac}\n')
+            script.write('\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nvariable tmp equal pxx\nvariable pxx0 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy0 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz0 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz0 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz0 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy0 equal ${tmp}\nvariable tmp equal lx\nvariable lx0 equal ${tmp}\nvariable tmp equal ly\nvariable ly0 equal ${tmp}\nvariable tmp equal lz\nvariable lz0 equal ${tmp}\n# These formulas define the derivatives w.r.t. strain components\n# Constants uses $, variables use v_\nvariable d1 equal -(v_pxx1-${pxx0})/(v_delta/v_len0)*${cfac}\nvariable d2 equal -(v_pyy1-${pyy0})/(v_delta/v_len0)*${cfac}\nvariable d3 equal -(v_pzz1-${pzz0})/(v_delta/v_len0)*${cfac}\nvariable d4 equal -(v_pyz1-${pyz0})/(v_delta/v_len0)*${cfac}\nvariable d5 equal -(v_pxz1-${pxz0})/(v_delta/v_len0)*${cfac}\nvariable d6 equal -(v_pxy1-${pxy0})/(v_delta/v_len0)*${cfac}\n')
 
             if opts['relax_cell']:
                 script.write('unfix FixBoxRelax\n')
@@ -553,7 +559,7 @@ class job:
         if 1==2:
             displace_script = open(os.path.join(os.path.abspath(self.path), 'displace.mod'), 'w')
 
-            displace_script.write('clear\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string Bars\nif "${dir} == 1" then &\n   "variable len0 equal ${lx0}"\nif "${dir} == 2" then &\n   "variable len0 equal ${ly0}"\nif "${dir} == 3" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 4" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 5" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 6" then &\n   "variable len0 equal ${ly0}"\nbox tilt large\nread_restart restart.equil\n')
+            displace_script.write('clear\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nif "${dir} == 1" then &\n   "variable len0 equal ${lx0}"\nif "${dir} == 2" then &\n   "variable len0 equal ${ly0}"\nif "${dir} == 3" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 4" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 5" then &\n   "variable len0 equal ${lz0}"\nif "${dir} == 6" then &\n   "variable len0 equal ${ly0}"\nbox tilt large\nread_restart restart.equil\n')
 
             displace_script.write('pair_style ' + fftype_pairstyle[opts['fftype']] + '\n')
             displace_script.write('pair_coeff * * ff.lmp ' + ' '.join(opts['atom_sequence']).title() + '\n')
@@ -571,7 +577,7 @@ class job:
 
             displace_script.close()
 
-            script.write('\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string Bars\nvariable tmp equal pxx\nvariable pxx0 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy0 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz0 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz0 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz0 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy0 equal ${tmp}\nvariable tmp equal lx\nvariable lx0 equal ${tmp}\nvariable tmp equal ly\nvariable ly0 equal ${tmp}\nvariable tmp equal lz\nvariable lz0 equal ${tmp}\n# These formulas define the derivatives w.r.t. strain components\n# Constants uses $, variables use v_\nvariable d1 equal -(v_pxx1-${pxx0})/(v_delta/v_len0)*${cfac}\nvariable d2 equal -(v_pyy1-${pyy0})/(v_delta/v_len0)*${cfac}\nvariable d3 equal -(v_pzz1-${pzz0})/(v_delta/v_len0)*${cfac}\nvariable d4 equal -(v_pyz1-${pyz0})/(v_delta/v_len0)*${cfac}\nvariable d5 equal -(v_pxz1-${pxz0})/(v_delta/v_len0)*${cfac}\nvariable d6 equal -(v_pxy1-${pxy0})/(v_delta/v_len0)*${cfac}\n')
+            script.write('\nvariable up equal 1.0e-6\nvariable atomjiggle equal 1.0e-5\nvariable cfac equal 1.0e-4\nvariable cunits string GPa\nvariable tmp equal pxx\nvariable pxx0 equal ${tmp}\nvariable tmp equal pyy\nvariable pyy0 equal ${tmp}\nvariable tmp equal pzz\nvariable pzz0 equal ${tmp}\nvariable tmp equal pyz\nvariable pyz0 equal ${tmp}\nvariable tmp equal pxz\nvariable pxz0 equal ${tmp}\nvariable tmp equal pxy\nvariable pxy0 equal ${tmp}\nvariable tmp equal lx\nvariable lx0 equal ${tmp}\nvariable tmp equal ly\nvariable ly0 equal ${tmp}\nvariable tmp equal lz\nvariable lz0 equal ${tmp}\n# These formulas define the derivatives w.r.t. strain components\n# Constants uses $, variables use v_\nvariable d1 equal -(v_pxx1-${pxx0})/(v_delta/v_len0)*${cfac}\nvariable d2 equal -(v_pyy1-${pyy0})/(v_delta/v_len0)*${cfac}\nvariable d3 equal -(v_pzz1-${pzz0})/(v_delta/v_len0)*${cfac}\nvariable d4 equal -(v_pyz1-${pyz0})/(v_delta/v_len0)*${cfac}\nvariable d5 equal -(v_pxz1-${pxz0})/(v_delta/v_len0)*${cfac}\nvariable d6 equal -(v_pxy1-${pxy0})/(v_delta/v_len0)*${cfac}\n')
 
             if opts['relax_cell']:
                 script.write('unfix FixBoxRelax\n')
@@ -711,7 +717,7 @@ def _read_elastic_moduli(outfilename):
             moduli[4,5] = float(newline.strip().split()[2]) # in Bars
             moduli[5,4] = float(newline.strip().split()[2]) # in Bars
 
-            moduli_array.append(moduli * 0.0001)
+            moduli_array.append(moduli)  # GPa
     outfile.close()
     return moduli_array
 
