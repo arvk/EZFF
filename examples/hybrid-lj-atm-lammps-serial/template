@@ -1,0 +1,3 @@
+pair_style      hybrid/overlay lj/cut <<ljcut>> atm <<atmcut>> <<atm3cut>>
+pair_coeff      * * lj/cut <<ljeps>> <<ljsgma>>
+pair_coeff      * * atm * <<atmeps>>
