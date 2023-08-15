@@ -303,9 +303,19 @@ class job:
             f = open(self.forcefieldfile, 'w')
             f.write(self.forcefield)
             f.close()
+        elif 'REAX' in self.options['fftype'].upper():
+            return_string = 'pair_style ' + fftype_pairstyle[self.options['fftype']] + '\n'
+            return_string += 'pair_coeff * * ' + self.forcefieldfile + ' ' + ' '.join(self.options['atom_sequence']).title() + '\n'
+            return_string += 'fix 1 all qeq/reaxff 1 0.0 10.0 1.0e-6 reaxff \n' # Set charge optimization
+            f = open(self.forcefieldfile, 'w')
+            f.write(self.forcefield)
+            f.close()
         else:
             return_string = 'pair_style ' + fftype_pairstyle[self.options['fftype']] + '\n'
-            return_string += 'pair_coeff * * ff.lmp ' + ' '.join(self.options['atom_sequence']).title() + '\n'
+            return_string += 'pair_coeff * * ' + self.forcefieldfile + ' ' + ' '.join(self.options['atom_sequence']).title() + '\n'
+            f = open(self.forcefieldfile, 'w')
+            f.write(self.forcefield)
+            f.close()
         return return_string
 
 
