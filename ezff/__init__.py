@@ -148,6 +148,7 @@ class FFParam(object):
                 var_maxs.append(self.variable_bounds[variable][1])
             self.pymoo_problem = pymoo_Problem(n_var = self.num_variables, n_obj = self.num_errors, n_constr = 0, xl = var_mins, xu = var_maxs)
 
+            self.normalize_errors()
             initial_population = []
             for varid, var in enumerate(self.variables):
                 evaledsoln = pymoo_Individual()
@@ -577,6 +578,7 @@ class FFParam(object):
         elif self.algo_framework == 'mobopt':
             best_errors, best_variables = self.algorithm.space.ParetoSet()
         elif self.algo_framework == 'pymoo':
+            self.normalize_errors()
             initial_population = []
             for varid, var in enumerate(self.variables):
                 evaledsoln = pymoo_Individual()
