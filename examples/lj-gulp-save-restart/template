@@ -1,0 +1,6 @@
+
+# Lennard Jones forcefield V = 4 epsilon * ((sigma/r)**12 - (sigma/r)**6)
+# atom1 atom2 epsilon sigma rmin rmax
+lennard epsilon 12 6
+Ne Ne <<eps>> <<sgma>> 0.0 10.0
+
