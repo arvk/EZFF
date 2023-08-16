@@ -1,0 +1,8 @@
+pair_style     hybrid/overlay coul/long 10.0 morse 3.5 lj/cut 1.12
+pair_coeff     * * coul/long
+pair_coeff     * * morse <<Dijmorse>> <<aijmorse>> <<r0morse>>
+pair_coeff     * * lj/cut <<ljeps>> 1.0
+kspace_style   ewald 1.0e-4
+
+set type 2 charge 2.4
+set type 1 charge -1.2
