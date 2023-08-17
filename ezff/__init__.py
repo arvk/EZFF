@@ -34,7 +34,6 @@ from pymoo.algorithms.soo.nonconvex.cmaes import CMAES as pymoo_CMAES
 
 import platypus
 
-
 from schwimmbad import MultiPool as sch_MultiPool
 from schwimmbad import MPIPool as sch_MPIPool
 from mpi4py import MPI
@@ -292,6 +291,9 @@ class FFParam(object):
 
 
     def ask(self):
+        """
+        Ask the optimization algorithm the next candidate variables for evaluation
+        """
         new_variables = []
         if self.algo_framework == 'nevergrad':
             for i in range(self.population_size):
@@ -385,6 +387,15 @@ class FFParam(object):
 
 
     def parameterize(self, num_epochs = None, pool = None):
+    """
+    The optimize function provides a uniform wrapper to solve the EZFF problem using the algorithm(s) provided.
+
+    :param num_epochs: Number of epochs to perform the optimization for. If multiple algorithms are specified, one iteration value should be provided for each algorithm
+    :type num_epochs: int
+
+    :param pool: Multiprocessing or MPI Pool for forcefield parameterization
+    :type pool: Multiprocessing or MPI Pool object
+    """
         self.pool = pool
         if self.algo_framework == 'nevergrad':
             for epoch in range(num_epochs):
@@ -569,6 +580,9 @@ class FFParam(object):
 
 
     def get_best_recommendation(self):
+        """
+        Return the best variables evaluated so far
+        """
         best_variables = None
         best_errors = None
         if self.algo_framework == 'nevergrad':
@@ -607,20 +621,38 @@ class FFParam(object):
         return [best_variables, best_errors]
 
 
-    def generate_pool(self, string):
-        if string == 'multi':
+    def generate_pool(self, pool_type):
+        """
+        Return a parallel pool object
+
+        :param pool_type: Type of parallel pool
+        :type pool_type: str
+        """
+        if pool_type == 'multi':
             self.pool_type = 'multi'
             return sch_MultiPool()
-        elif string == 'mpi':
+        elif pool_type == 'mpi':
             self.pool_type = 'mpi'
             return sch_MPIPool()
 
     def save_evaluated(self,filename):
+        """
+        Save all variables evaluated so far as a zipped numpy array
+
+        :param filename: File to which variables are saved
+        :type filename: str
+        """
         timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
         filename = filename+timestamp+'.npz'
         np.savez(filename, variables=np.array(self.variables), errors=np.array(self.errors))
 
     def load_evaluated(self,filename):
+        """
+        Load all variables evaluated from a zipped numpy array
+
+        :param filename: File to load variables from
+        :type filename: str
+        """
         fileobj = np.load(filename)
         vars = fileobj['variables']
         errs = fileobj['errors']
@@ -644,10 +676,16 @@ class FFParam(object):
 
 
 
-def get_pool_rank(string):
-    if string == 'multi':
+def get_pool_rank(pool_type):
+    """
+    Return the rank of the current process in a parallel setting
+
+    :param pool_type: Type of parallel pool
+    :type pool_type: str
+    """
+    if pool_type == 'multi':
         return multiprocessing.current_process()._identity[0]
-    elif string == 'mpi':
+    elif pool_type == 'mpi':
         return MPI.COMM_WORLD.Get_rank()
     else:
         return '0'
