@@ -3,9 +3,9 @@ import os
 import sys
 import xtal
 import numpy as np
-from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
-from platypus.types import Real, Integer
-from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
+# from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
+# from platypus.types import Real, Integer
+# from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
 
 
 
