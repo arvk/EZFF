@@ -1,22 +1,20 @@
 """This module provide general functions for EZFF"""
+
+# General imports
 import os
 import sys
-import xtal
 import numpy as np
-from platypus import Problem, unique, nondominated, NSGAII, NSGAIII, IBEA, PoolEvaluator
-from platypus.types import Real, Integer
-from platypus.operators import InjectedPopulation, GAOperator, SBX, PM
-try:
-    from platypus.mpipool import MPIPool
-except ImportError:
-    pass
-from .ffio import *
-from .errors import *
-import nevergrad as ng
-import mobopt
 import math
 import random
+from datetime import datetime
+import xtal
+# EZFF imports
+from .ffio import *
+from .errors import *
 
+# Optimizer imports
+import nevergrad as ng
+import mobopt
 from pymoo.core.problem import Problem as pymoo_Problem
 from pymoo.core.individual import Individual as pymoo_Individual
 from pymoo.core.population import Population as pymoo_Population
@@ -31,15 +29,14 @@ from pymoo.termination.max_eval import MaximumFunctionCallTermination
 from pymoo.algorithms.soo.nonconvex.es import ES as pymoo_ES
 from pymoo.algorithms.soo.nonconvex.nelder import NelderMead as pymoo_NelderMead
 from pymoo.algorithms.soo.nonconvex.cmaes import CMAES as pymoo_CMAES
-
 import platypus
 
+# Parallel processing imports
 from schwimmbad import MultiPool as sch_MultiPool
 from schwimmbad import MPIPool as sch_MPIPool
 from mpi4py import MPI
 import multiprocessing
 
-from datetime import datetime
 
 
 __version__ = '0.9.4' # Update setup.py if version changes
