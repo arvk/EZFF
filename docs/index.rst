@@ -6,7 +6,7 @@
 EZFF -- Easy Multi-objective Forcefield Optimization
 ====================================================
 
-EZFF is a Python-based library for quick and easy parameterization of forcefields and interatomic potentials for molecular dynamics simulations. EZFF provides interfaces to popular atomistic simulation software, GULP, VASP and QChem and uses Platypus for solving multi-objective optimization problems. Use the links below to get started.
+EZFF is a Python-based library for quick and easy parameterization of forcefields and interatomic potentials for molecular dynamics simulations. EZFF provides interfaces to popular atomistic simulation software, GULP, LAMMPS, VASP, RXMD, and QChem and uses Platypus for solving multi-objective optimization problems. Use the links below to get started.
 
 .. toctree::
    :maxdepth: 2
