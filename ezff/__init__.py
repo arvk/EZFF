@@ -387,15 +387,15 @@ class FFParam(object):
 
 
     def parameterize(self, num_epochs = None, pool = None):
-    """
-    The optimize function provides a uniform wrapper to solve the EZFF problem using the algorithm(s) provided.
+        """
+        The optimize function provides a uniform wrapper to solve the EZFF problem using the algorithm(s) provided.
 
-    :param num_epochs: Number of epochs to perform the optimization for. If multiple algorithms are specified, one iteration value should be provided for each algorithm
-    :type num_epochs: int
+        :param num_epochs: Number of epochs to perform the optimization for. If multiple algorithms are specified, one iteration value should be provided for each algorithm
+        :type num_epochs: int
 
-    :param pool: Multiprocessing or MPI Pool for forcefield parameterization
-    :type pool: Multiprocessing or MPI Pool object
-    """
+        :param pool: Multiprocessing or MPI Pool for forcefield parameterization
+        :type pool: Multiprocessing or MPI Pool object
+        """
         self.pool = pool
         if self.algo_framework == 'nevergrad':
             for epoch in range(num_epochs):
