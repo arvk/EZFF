@@ -12,11 +12,9 @@ gt_full_scan = qchem.read_structure(['ground_truths/dissociation_length_scan/CHO
 gt_full_scan_energy = qchem.read_energy(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
 
 def my_error_function(variable_values, template):
-    # Get rank from pool
-    try:
-        myrank = ezff.get_pool_rank('multi')
-    except:
-        myrank = 0
+
+    myrank = ezff.get_pool_rank()
+
     path = str(myrank)+'/relaxed'
 
     # Calculate Ground State

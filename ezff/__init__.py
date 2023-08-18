@@ -675,16 +675,12 @@ class FFParam(object):
 
 
 
-def get_pool_rank(pool_type):
+def get_pool_rank():
     """
     Return the rank of the current process in a parallel setting
-
-    :param pool_type: Type of parallel pool
-    :type pool_type: str
     """
-    if pool_type == 'multi':
-        return multiprocessing.current_process()._identity[0]
-    elif pool_type == 'mpi':
-        return MPI.COMM_WORLD.Get_rank()
-    else:
-        return '0'
+    try:
+        myrank = multiprocessing.current_process()._identity[0]
+        return myrank                     # return rank of multiprocessing process, if available
+    except:
+        return MPI.COMM_WORLD.Get_rank()  # return rank of MPI process, or 0 if there is no MPI

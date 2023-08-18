@@ -15,11 +15,8 @@ gt_compressed_structure = vasp.read_atomic_structure('ground_truths/compressed/P
 
 
 def my_error_function(variable_values, template):
-    # Get rank from pool
-    try:
-        myrank = pool.rank
-    except:
-        myrank = 0
+
+    myrank = ezff.get_pool_rank()
 
     # FOR THE RELAXED STRUCTURE
     path = str(myrank)+'/relaxed'

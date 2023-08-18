@@ -7,11 +7,8 @@ gt_gs = qchem.read_structure('ground_truths/optCHOSx.out')
 gt_gs_atomic_charges = qchem.read_atomic_charges('ground_truths/optCHOSx.out')
 
 def my_error_function(variable_values, template):
-    # Get a unique path for GULP jobs from the MPI rank. Set to '0' for serial jobs
-    try:
-        path = str(pool.rank)
-    except:
-        path = '0'
+
+    myrank = ezff.get_pool_rank()
 
     # Calculate Ground State Charges
     md_gs_job = gulp.job(path = path)

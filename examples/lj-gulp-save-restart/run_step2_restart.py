@@ -7,11 +7,8 @@ gt_bulk_modulus = 1.1236 #GPa
 gt_structure = vasp.read_atomic_structure('ground_truths/POSCAR')
 
 def my_error_function(variable_values, template):
-    # Get rank from pool
-    try:
-        myrank = pool.rank
-    except:
-        myrank = 0
+
+    myrank = ezff.get_pool_rank()
 
     # Configure GULP job.
     path = str(myrank)

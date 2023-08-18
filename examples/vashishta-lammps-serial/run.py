@@ -7,10 +7,8 @@ gt_bulk_modulus = 211 #GPa
 gt_structure = vasp.read_atomic_structure('ground_truths/POSCAR')
 
 def my_error_function(variable_values, template):
-    try:
-        myrank = ezff.get_pool_rank('multi')
-    except:
-        myrank = '0'
+
+    myrank = ezff.get_pool_rank()
 
     # Configure LAMMPS job.
     path = str(myrank)
