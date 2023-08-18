@@ -78,12 +78,23 @@ Features demonstrated in this example
 
 reaxff-charge-gulp-serial
 ------------------
-Optimization of charge parameters in the ReaxFF forcefield for a thio-ketone monomer against 2 objective -- **atomic charges** and **structural distortion**
+Optimization of charge parameters in the ReaxFF forcefield for a thio-ketone monomer against 1 objective -- **atomic charges**
 
 Features demonstrated in this example
 
 1. Use of make_template_qeq
-2. Use of ezff.error_atomic_charges and ezff.error_structure_distortion
+2. Use of ezff.error_atomic_charges
+3. Use of nevergrad single-objective optimizers
+
+
+reaxff-distortion-gulp-serial
+------------------
+Optimization of charge and bond parameters in the ReaxFF forcefield for a thio-ketone monomer against 2 objective -- **atomic charges** and **structural distortion**
+
+Features demonstrated in this example
+
+1. Use of ezff.error_structure_distortion
+
 
 
 reaxff-lammps-parallel-multi
