@@ -2,14 +2,11 @@ import ezff
 from ezff.interfaces import gulp, vasp
 import numpy as np
 
-bounds = ezff.read_variable_bounds('variable_bounds', verbose=False)
-template = ezff.read_forcefield_template('template')
-
 # DEFINE GROUND TRUTHS
 gt_bulk_modulus = 1.1236 #GPa
 gt_structure = vasp.read_atomic_structure('ground_truths/POSCAR')
 
-def my_error_function(variable_values):
+def my_error_function(variable_values, template):
     # Get rank from pool
     try:
         myrank = pool.rank

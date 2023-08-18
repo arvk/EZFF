@@ -2,9 +2,6 @@ import ezff
 from ezff.interfaces import vasp, gulp
 import numpy as np
 
-bounds = ezff.read_variable_bounds('variable_bounds', verbose=False)
-template = ezff.read_forcefield_template('template')
-
 # DEFINE GROUND TRUTHS
 gt_relax_disp_GS = vasp.read_phonon_dispersion('ground_truths/relaxed/G_S.dat')
 gt_relax_structure = vasp.read_atomic_structure('ground_truths/relaxed/POSCAR')
@@ -17,7 +14,7 @@ gt_compressed_disp_GS = vasp.read_phonon_dispersion('ground_truths/compressed/G_
 gt_compressed_structure = vasp.read_atomic_structure('ground_truths/compressed/POSCAR')
 
 
-def my_error_function(variable_values):
+def my_error_function(variable_values, template):
     # Get rank from pool
     try:
         myrank = ezff.get_pool_rank('mpi')

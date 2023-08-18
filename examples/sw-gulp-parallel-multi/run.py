@@ -17,7 +17,7 @@ gt_compressed_disp_GS = vasp.read_phonon_dispersion('ground_truths/compressed/G_
 gt_compressed_structure = vasp.read_atomic_structure('ground_truths/compressed/POSCAR')
 
 
-def my_error_function(variable_values):
+def my_error_function(variable_values, template):
     # Get rank from pool
     try:
         myrank = ezff.get_pool_rank('multi')

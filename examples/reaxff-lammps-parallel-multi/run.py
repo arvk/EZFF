@@ -11,7 +11,7 @@ gt_freq_scan_energy = qchem.read_energy('ground_truths/frequency_length_scan/CHO
 gt_full_scan = qchem.read_structure(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
 gt_full_scan_energy = qchem.read_energy(['ground_truths/dissociation_length_scan/CHOSx.run1.out', 'ground_truths/dissociation_length_scan/CHOSx.run2.out', 'ground_truths/dissociation_length_scan/CHOSx.run3.out'])
 
-def my_error_function(rr):
+def my_error_function(variable_values, template):
     # Get rank from pool
     try:
         myrank = ezff.get_pool_rank('multi')
@@ -22,12 +22,12 @@ def my_error_function(rr):
     # Calculate Ground State
     md_gs_job = lammps.job(path = path)
     md_gs_job.structure = gt_gs
-    md_gs_job.forcefield = md_gs_job.generate_forcefield(template, rr, FFtype = 'reaxff')
+    md_gs_job.forcefield = md_gs_job.generate_forcefield(template, variable_values, FFtype = 'reaxff')
     md_gs_job.options['pbc'] = False
     md_gs_job.options['relax_atoms'] = False
     md_gs_job.options['relax_cell'] = False
     # Run GULP calculation
-    md_gs_job.run(command='/Users/akrishnamoorthy/Homebrew/bin/lmp_serial')
+    md_gs_job.run()
     # Read output from completed GULP job and clean-up
     md_gs_energy = md_gs_job.read_energy()
     #md_gs_job.cleanup()
@@ -35,12 +35,12 @@ def my_error_function(rr):
     # Calculate PES Scan for frequency error
     md_freq_scan_job = lammps.job(path = path)
     md_freq_scan_job.structure = gt_freq_scan
-    md_freq_scan_job.forcefield = md_freq_scan_job.generate_forcefield(template, rr, FFtype = 'reaxff')
+    md_freq_scan_job.forcefield = md_freq_scan_job.generate_forcefield(template, variable_values, FFtype = 'reaxff')
     md_freq_scan_job.options['pbc'] = False
     md_freq_scan_job.options['relax_atoms'] = False
     md_freq_scan_job.options['relax_cell'] = False
     # Run GULP calculation
-    md_freq_scan_job.run(command='/Users/akrishnamoorthy/Homebrew/bin/lmp_serial')
+    md_freq_scan_job.run()
     # Read output from completed GULP job and clean-up
     md_freq_scan_energy = md_freq_scan_job.read_energy()
     #md_freq_scan_job.cleanup()
@@ -48,12 +48,12 @@ def my_error_function(rr):
     # Calculate PES Scan for dissociation error
     md_full_scan_job = lammps.job(path = path)
     md_full_scan_job.structure = gt_full_scan
-    md_full_scan_job.forcefield = md_full_scan_job.generate_forcefield(template, rr, FFtype = 'reaxff')
+    md_full_scan_job.forcefield = md_full_scan_job.generate_forcefield(template, variable_values, FFtype = 'reaxff')
     md_full_scan_job.options['pbc'] = False
     md_full_scan_job.options['relax_atoms'] = False
     md_full_scan_job.options['relax_cell'] = False
     # Run GULP calculation
-    md_full_scan_job.run(command='/Users/akrishnamoorthy/Homebrew/bin/lmp_serial')
+    md_full_scan_job.run()
     # Read output from completed GULP job and clean-up
     md_full_scan_energy = md_full_scan_job.read_energy()
     #md_full_scan_job.cleanup()
@@ -72,11 +72,7 @@ FF.make_template_threebody('S','C','S')
 FF.make_template_fourbody('S','C','S','S')
 FF.generate_templates()
 
-time.sleep(5.0)
-
-# Read template and variable ranges
-bounds = ezff.read_variable_bounds('param_ranges', verbose=False)
-template = ezff.read_forcefield_template('ff.template.generated')
+time.sleep(1.0)
 
 if __name__ == '__main__':
 

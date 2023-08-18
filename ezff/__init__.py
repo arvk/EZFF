@@ -8,6 +8,8 @@ import math
 import random
 from datetime import datetime
 import xtal
+from functools import partial
+
 # EZFF imports
 from .ffio import *
 from .errors import *
@@ -414,7 +416,7 @@ class FFParam(object):
                 if self.pool is None:
                     for variable in new_variables:
                         variable_dict = dict(zip(self.variable_names, variable))
-                        error = self.error_function(variable_dict)
+                        error = self.error_function(variable_dict, self.forcefield_template)
                         new_errors.append(error)
                 else:
                     if self.pool_type == 'mpi':
@@ -422,7 +424,7 @@ class FFParam(object):
                             pool.wait()
 
                     variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
-                    new_errors = self.pool.map(self.error_function, variable_dict_list)
+                    new_errors = self.pool.map(partial(self.error_function, template = self.forcefield_template), variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
@@ -445,7 +447,7 @@ class FFParam(object):
                 if self.pool is None:
                     for variable in new_variables:
                         variable_dict = dict(zip(self.variable_names, variable))
-                        error = self.error_function(variable_dict)
+                        error = self.error_function(variable_dict, self.forcefield_template)
                         new_errors.append(error)
                 else:
                     if self.pool_type == 'mpi':
@@ -453,7 +455,7 @@ class FFParam(object):
                             pool.wait()
 
                     variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
-                    new_errors = self.pool.map(self.error_function, variable_dict_list)
+                    new_errors = self.pool.map(partial(self.error_function, template = self.forcefield_template), variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
@@ -476,7 +478,7 @@ class FFParam(object):
                 if self.pool is None:
                     for variable in new_variables:
                         variable_dict = dict(zip(self.variable_names, variable))
-                        error = self.error_function(variable_dict)
+                        error = self.error_function(variable_dict, self.forcefield_template)
                         new_errors.append(error)
                 else:
                     if self.pool_type == 'mpi':
@@ -484,7 +486,7 @@ class FFParam(object):
                             pool.wait()
 
                     variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
-                    new_errors = self.pool.map(self.error_function, variable_dict_list)
+                    new_errors = self.pool.map(partial(self.error_function, self.forcefield_template), variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
@@ -507,7 +509,7 @@ class FFParam(object):
                 if self.pool is None:
                     for variable in new_variables:
                         variable_dict = dict(zip(self.variable_names, variable))
-                        error = self.error_function(variable_dict)
+                        error = self.error_function(variable_dict, self.forcefield_template)
                         new_errors.append(error)
 
                     # for variable_id, variable in enumerate(new_variables):
@@ -520,7 +522,7 @@ class FFParam(object):
                             pool.wait()
 
                     variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
-                    new_errors = self.pool.map(self.error_function, variable_dict_list)
+                    new_errors = self.pool.map(partial(self.error_function, template = self.forcefield_template), variable_dict_list)
 
                     # for variable_id, variable in enumerate(new_variables):
                     #     self.variables.append(variable)

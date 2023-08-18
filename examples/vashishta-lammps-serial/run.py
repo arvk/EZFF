@@ -2,13 +2,11 @@ import ezff
 from ezff.interfaces import gulp, vasp, lammps
 import numpy as np
 
-template = ezff.read_forcefield_template('template')
-
 # DEFINE GROUND TRUTHS
 gt_bulk_modulus = 211 #GPa
 gt_structure = vasp.read_atomic_structure('ground_truths/POSCAR')
 
-def my_error_function(variable_values):
+def my_error_function(variable_values, template):
     try:
         myrank = ezff.get_pool_rank('multi')
     except:
@@ -39,7 +37,7 @@ def my_error_function(variable_values):
     latt_error_1 = np.linalg.norm(error_abc[0])                                            # error in 'a' lattice constant
     latt_error_2 = np.linalg.norm(error_abc[1])                                            # error in 'a' lattice constant
 
-    #md_job.cleanup()
+    md_job.cleanup()
 
     return [latt_error_1+latt_error_2, bulk_modulus_error]
 
