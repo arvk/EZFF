@@ -13,6 +13,7 @@ EZFF is a Python-based library for quick and easy parameterization of forcefield
    :caption: Contents:
 
    basic
+   algorithms
    examples
    code_documentation
 
