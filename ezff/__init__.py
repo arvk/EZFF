@@ -306,7 +306,7 @@ class FFParam(object):
             prob = 0.1
 
             for pointID in range(len(self.variables)):
-                self.algorithm.space.add_observation(np.array(self.variables[pointID]), 0.0 - np.array(self.normalized_errors[pointID]))
+                self.algorithm.space.add_observation(np.array(self.variables[pointID]), np.array(self.normalized_errors[pointID]))
 
             for i in range(self.num_errors):
                 yy = self.algorithm.space.f[:, i]
@@ -556,7 +556,10 @@ class FFParam(object):
             for reco_id, reco_var in enumerate(reco_vars):
                 varfile.write(' '.join([str(variable) for variable in reco_var]))
                 varfile.write('\n')
-                errfile.write(' '.join([str(error) for error in reco_errs[reco_id]]))
+                if self.algo_framework == 'mobopt':
+                    errfile.write(' '.join([str(0.0 - error) for error in reco_errs[reco_id]]))
+                else:
+                    errfile.write(' '.join([str(error) for error in reco_errs[reco_id]]))
                 errfile.write('\n')
             varfile.close()
             errfile.close()
@@ -672,6 +675,8 @@ class FFParam(object):
                     self.normalized_errors.append(var)
 
         self.normalized_errors = np.array(self.normalized_errors)
+        if self.algo_framework == 'mobopt':
+            self.normalized_errors = 0.0 - self.normalized_errors    # MOBOPT will only attempt to maximize the error function
 
 
 
