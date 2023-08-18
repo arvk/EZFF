@@ -553,6 +553,10 @@ class FFParam(object):
 
             reco_vars, reco_errs = self.get_best_recommendation()
 
+            if self.algo_framework == 'nevergrad' and self.num_errors == 1:
+                reco_vars = [[reco_vars[key] for key in self.variable_names]]
+                reco_errs = [[reco_errs]]
+
             for reco_id, reco_var in enumerate(reco_vars):
                 varfile.write(' '.join([str(variable) for variable in reco_var]))
                 varfile.write('\n')
