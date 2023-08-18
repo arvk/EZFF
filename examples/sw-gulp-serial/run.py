@@ -97,5 +97,5 @@ if __name__ == '__main__':
 
     obj.set_algorithm('randomsearch_so', population_size = 16)
     obj.parameterize(num_epochs = 5)
-    obj.set_algorithm('nsga2_mo_platypus', population_size = 16)
+    obj.set_algorithm('mobo', population_size = 16)
     obj.parameterize(num_epochs = 5)

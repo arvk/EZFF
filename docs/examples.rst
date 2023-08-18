@@ -34,6 +34,7 @@ Features demonstrated in this example
 2. Calculating error between phonon dispersions
 3. Calculating error between computed and ground-truth phonon dispersions
 4. Reading-in elastic modulus tensor from GULP run
+5. Usage of the Multi-objective Bayesian Optimizer
 
 
 sw-gulp-multialgo
