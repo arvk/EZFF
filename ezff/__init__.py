@@ -41,7 +41,7 @@ import multiprocessing
 
 
 
-__version__ = '0.9.5' # Update setup.py if version changes
+__version__ = '1.0.0' # Update setup.py if version changes
 
 
 class FFParam(object):
