@@ -14,7 +14,7 @@ class job:
     """
     Class representing a LAMMPS calculation
     """
-    def __init__(self, verbose=False, path='.'):
+    def __init__(self, verbose=False, path='.', units='metal'):
         """
         :param path: Path where the GULP job must be run from
         :type path: str
@@ -35,6 +35,7 @@ class job:
         self.structure = None
         self.forcefieldfile = os.path.join(os.path.abspath(path), 'generated_forcefield')
         self.forcefield = ''
+        self.units = units
         self.options = {
             "relax_atoms": False,
             "relax_cell": False,
@@ -325,7 +326,7 @@ class job:
         opts = self.options
         script = open(self.scriptfile,'w')
 
-        script.write('units metal \n')  # All simulations will be performed in LAMMPS metal units
+        script.write('units ' +  self.units + ' \n')  # All simulations will be performed in LAMMPS metal units
         script.write('dimension 3 \n')  # All simulations will be 3D
         script.write('atom_style charge \n')
 
@@ -620,7 +621,15 @@ class job:
 
         :returns: Energy of the input structure(s) in eV as a np.ndarray
         """
-        return _read_energy(self.outfile)
+
+        raw_energy = _read_energy(self.outfile)
+
+        if self.units == 'metal':
+            energy_in_eV = raw_energy
+        elif self.units == 'real':
+            energy_in_eV = raw_energy / 23.057
+
+        return energy_in_eV
 
     def read_elastic_moduli(self):
         """
@@ -741,13 +750,13 @@ def _read_energy(outfilename):
     :type outfilename: str
     :returns: Energy of the structure in eV
     """
-    energy_in_eV = []
+    energy = []
     outfile = open(outfilename, 'r')
     for line in outfile:
         if 'EZFF_ENERGY' in line:
-            energy_in_eV.append(float(line.strip().split()[-1]))
+            energy.append(float(line.strip().split()[-1]))
     outfile.close()
-    return np.array(energy_in_eV)
+    return np.array(energy)
 
 
 
