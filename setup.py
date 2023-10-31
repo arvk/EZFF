@@ -16,6 +16,8 @@ setup(name='EZFF',
           'pymoo >= 0.6.0.1',
           'platypus-opt >= 1.0.3',
           'deap >= 1.3.0',
+          'periodictable >= 1.6.1',
+          'cclib >= 1.8',
       ],
       classifiers=[
           'Development Status :: 4 - Beta',
