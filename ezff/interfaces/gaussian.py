@@ -37,9 +37,12 @@ def read_structure(outfilename):
     ypos = [atom.cart[1] for atom in snapshot.atomlist for snapshot in structure.snaplist]
     zpos = [atom.cart[2] for atom in snapshot.atomlist for snapshot in structure.snaplist]
 
-    structure.box[0][0] = np.amax(xpos) - np.amin(xpos) + 50.0
-    structure.box[1][1] = np.amax(ypos) - np.amin(ypos) + 50.0
-    structure.box[2][2] = np.amax(zpos) - np.amin(zpos) + 50.0
+    structure.box[0][0] = np.amax(xpos) - np.amin(xpos) + 100.0
+    structure.box[1][1] = np.amax(ypos) - np.amin(ypos) + 100.0
+    structure.box[2][2] = np.amax(zpos) - np.amin(zpos) + 100.0
+
+    structure.move([0.0 - np.amin(xpos), 0.0 - np.amin(ypos), 0.0 - np.amin(zpos)])
+    structure.move([50.0, 50.0, 50.0])
 
     structure.make_dircar_matrices()
     structure.cartodir()

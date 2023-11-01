@@ -254,7 +254,7 @@ class job:
 
         structfile.write('Masses\n\n')
         for ID, atom_type in enumerate(atom_types):
-            structfile.write('%d  %f \n' % (ID+1, atomic_properties.atomic_mass[atom_type]))
+            structfile.write('%d  %f \n' % (ID+1, atomic_properties.atomic_mass[atom_type.upper()]))
         structfile.write('\n\n')
 
         structfile.write('Atoms\n\n')
