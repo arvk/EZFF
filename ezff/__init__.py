@@ -486,7 +486,7 @@ class FFParam(object):
                             pool.wait()
 
                     variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
-                    new_errors = self.pool.map(partial(self.error_function, self.forcefield_template), variable_dict_list)
+                    new_errors = self.pool.map(partial(self.error_function, template = self.forcefield_template), variable_dict_list)
 
                 for variable_id, variable in enumerate(new_variables):
                     self.variables.append(variable)
