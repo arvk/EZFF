@@ -1,0 +1,2 @@
+pair_style lj/cut 10.0
+pair_coeff 1 1 <<eps>> <<sgma>> 10.0

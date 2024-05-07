@@ -6,6 +6,14 @@ Python-based library for easy force-field fitting
 
 ## Installation
 
+=======
+Install from PyPI using
+```
+python3 -m pip install https://github.com/ppgaluzio/MOBOpt/archive/master.zip
+python3 -m pip install EZFF
+```
+
+
 To get the examples and documentation, install the latest developmental version from GitHub via
 ```
 git clone https://github.com/akvatol/EZFF2

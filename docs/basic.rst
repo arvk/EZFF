@@ -3,7 +3,7 @@ Basic Usage
 You will need five pieces of information to get started with focefield optimization using EZFF.
 
 1. Ground truths - Physical properties to parameterize the forcefield against
-2. Serial GULP executable
+2. Serial MD executable (either GULP or LAMMPS or RXMD)
 3. Forcefield template
 4. Maximum and minimum values of decision variables
 5. A master python script (`run.py` in examples) that defines different errors, handles GULP jobs and optimization parameters
@@ -13,8 +13,13 @@ You will need five pieces of information to get started with focefield optimizat
 :Ground truths:
    Ground truth values (for lattice constant, elastic constants, energies, phonon dispersion curves etc) can either be provided by hand in the master script, or can be calculated using methods provided in the different ezff.interfaces modules
 
-:Serial GULP executable:
-   Serial GULP executable built from source code available from http://gulp.curtin.edu.au/gulp/ . Parallel optimization jobs simply launch multiple copies of the serial executable.
+:Serial MD executable:
+   A working serial MD engine. Options available are:
+
+   1. Serial GULP executable built from source code available from http://gulp.curtin.edu.au/gulp/
+   2. Serial LAMMPS executable built from https://www.lammps.org/#gsc.tab=0
+   3. Serial RXMD executable built from https://magics.usc.edu/rxmd/
+   Parallel optimization jobs simply launch multiple copies of the serial executable.
 
 :Forcefield template:
    A forcefield template file is used to designate which variables must be considered for optimization. The forcefield template is constructed from a functioning GULP-readable forcefield by replacing the parameters that need to be optimized with variable names enclosed within dual angle-brackets. For example, the following Lennard-Jones forcefield for solid Neon (from examples lj-serial and lj-parallel) ::
@@ -48,11 +53,12 @@ You will need five pieces of information to get started with focefield optimizat
 
    .. warning::
       Please ensure that the template and variable_ranges file are compatible. Specifically,
+
       1. Every variable defined in the forcefield template must have one (and only one) corresonding entry in the variable ranges file
       2. The variable ranges file should not refer to variables not present in the template file
 
 
 :Python script:
-   This python script should include, at the very least, your custom function to calculate the error (i.e. deviation of the forcefield from ground-truths), an ezff.OptProblem, an ezff.Algorithm and a call to ezff.optimize, and for the case of parallel execution, an ezff.Pool.
+   This python script should include, at the very least, your custom function to calculate the error (i.e. deviation of the forcefield from ground-truths), an ezff.FFParam object, a call to ezff.set_algorithm and a call to ezff.parameterize.
 
-   The custom error function should be written to accept one input -- a dictionary of decision_variable-value pairs (e.g. {'eps': 1.273, 'sgma': 0.12} for example above) and should return a list of all computed objectives. The length of this returned list should equal the number of errors provided during OptProblem initialization.
+   The custom error function should be written to accept one input -- a dictionary of decision_variable-value pairs (e.g. {'eps': 1.273, 'sgma': 0.12} for example above) and should return a list of all computed objectives. The length of this returned list should equal the number of errors.
