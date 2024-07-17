@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='EZFF',
-      version='1.0.5', # Update __init__.py if the version changes!
+      version='1.0.6', # Update __init__.py if the version changes!
       description='Multiobjective forcefield optimization for Molecular Dynamics',
       author='Aravind Krishnamoorthy',
       author_email='arvk@users.noreply.github.com',
@@ -13,7 +13,7 @@ setup(name='EZFF',
           'xtal >= 0.9.1',
           'schwimmbad >= 0.3.2',
           'nevergrad >= 0.11.0',
-          'pymoo == 0.6.0.dev0',
+          'pymoo >= 0.6.0.dev0',
           'platypus-opt >= 1.0.3',
           'deap >= 1.3.0',
           'periodictable >= 1.6.1',
