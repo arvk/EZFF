@@ -188,6 +188,142 @@ class reax_forcefield:
 
        return
 
+
+
+    def _template_onebody(self, e1, bounds):
+       """
+       Generate decision variable for electrostatic energy equation for a particular element
+
+       :param e1: Chemical symbol for element 1
+       :type e1: str
+
+       :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+       :type bounds: float
+
+       """
+       ie1 = self._get_element_number(e1)
+       if ie1 == 0: return
+
+       # gamma, chi and eta
+       for index, line in enumerate(self.onebody[4::4]):
+           if (line[0] == e1):
+               break
+       line_number = 3 + (4*index) + 1
+
+       # Line 1
+       r0_sigma = float(self.onebody[line_number][1+1-1]) #  1st term (+1 for element name), -1 for 0 indexing
+       rvdW = float(self.onebody[line_number][4+1-1]) #  4th term (+1 for element name), -1 for 0 indexing
+       EvdW = float(self.onebody[line_number][5+1-1]) #  5th term (+1 for element name), -1 for 0 indexing
+       r0_pi = float(self.onebody[line_number][7+1-1]) #  7th term (+1 for element name), -1 for 0 indexing
+
+       # Line 2
+       alfa = float(self.onebody[line_number+1][1-1]) #  1st term, -1 for 0 indexing
+       gamma_w_inv = float(self.onebody[line_number+1][2-1]) #  2nd term, -1 for 0 indexing
+       Eunder = float(self.onebody[line_number+1][4-1]) #  4th term, -1 for 0 indexing
+       Eover = float(self.onebody[line_number+1][5-1]) #  5th term, -1 for 0 indexing
+
+       # Line 3
+       r0_pipi = float(self.onebody[line_number+2][1-1]) #  1st term, -1 for 0 indexing
+       Elp = float(self.onebody[line_number+2][2-1]) #  2nd term, -1 for 0 indexing
+       pboc4 = float(self.onebody[line_number+2][4-1]) #  4th term, -1 for 0 indexing
+       pboc3 = float(self.onebody[line_number+2][5-1]) #  5th term, -1 for 0 indexing
+       pboc5 = float(self.onebody[line_number+2][6-1]) #  6th term, -1 for 0 indexing
+
+       # Line 4
+       povun2 = float(self.onebody[line_number+3][1-1]) #  1st term, -1 for 0 indexing
+       pval3 = float(self.onebody[line_number+3][2-1]) #  2nd term, -1 for 0 indexing
+       pval5 = float(self.onebody[line_number+3][5-1]) #  5th term, -1 for 0 indexing
+
+
+       # r0_sigma
+       self.onebody[line_number][1+1-1] = '<<r0_sigma_'+e1+'>>'
+       delta = bounds * np.absolute(r0_sigma)
+       self.params_write.append(['r0_sigma_'+e1, str(r0_sigma-delta), str(r0_sigma+delta)])
+
+       # rvdW
+       self.onebody[line_number][4+1-1] = '<<rvdW_'+e1+'>>'
+       delta = bounds * np.absolute(rvdW)
+       self.params_write.append(['rvdW_'+e1, str(rvdW-delta), str(rvdW+delta)])
+
+       # EvdW
+       self.onebody[line_number][5+1-1] = '<<EvdW_'+e1+'>>'
+       delta = bounds * np.absolute(EvdW)
+       self.params_write.append(['EvdW_'+e1, str(EvdW-delta), str(EvdW+delta)])
+
+       # r0_pi
+       self.onebody[line_number][7+1-1] = '<<r0_pi_'+e1+'>>'
+       delta = bounds * np.absolute(r0_pi)
+       self.params_write.append(['r0_pi_'+e1, str(r0_pi-delta), str(r0_pi+delta)])
+
+       # alfa
+       self.onebody[line_number+1][1-1] = '<<alfa_'+e1+'>>'
+       delta = bounds * np.absolute(alfa)
+       self.params_write.append(['alfa_'+e1, str(alfa-delta), str(alfa+delta)])
+
+       # gamma_w_inv
+       self.onebody[line_number+1][2-1] = '<<gamma_w_inv_'+e1+'>>'
+       delta = bounds * np.absolute(gamma_w_inv)
+       self.params_write.append(['gamma_w_inv_'+e1, str(gamma_w_inv-delta), str(gamma_w_inv+delta)])
+
+       # Eunder
+       self.onebody[line_number+1][4-1] = '<<Eunder_'+e1+'>>'
+       delta = bounds * np.absolute(Eunder)
+       self.params_write.append(['Eunder_'+e1, str(Eunder-delta), str(Eunder+delta)])
+
+       # Eover
+       self.onebody[line_number+1][5-1] = '<<Eover_'+e1+'>>'
+       delta = bounds * np.absolute(Eover)
+       self.params_write.append(['Eover_'+e1, str(Eover-delta), str(Eover+delta)])
+
+       # r0_pipi
+       self.onebody[line_number+2][1-1] = '<<r0_pipi_'+e1+'>>'
+       delta = bounds * np.absolute(r0_pipi)
+       self.params_write.append(['r0_pipi_'+e1, str(r0_pipi-delta), str(r0_pipi+delta)])
+
+       # Elp
+       if np.absolute(Elp) > 0.001:
+           self.onebody[line_number+2][2-1] = '<<Elp_'+e1+'>>'
+           delta = bounds * np.absolute(Elp)
+           self.params_write.append(['Elp_'+e1, str(Elp-delta), str(Elp+delta)])
+
+       # pboc4
+       if np.absolute(pboc4) > 0.001:
+           self.onebody[line_number+2][4-1] = '<<pboc4_'+e1+'>>'
+           delta = bounds * np.absolute(pboc4)
+           self.params_write.append(['pboc4_'+e1, str(pboc4-delta), str(pboc4+delta)])
+
+       # pboc3
+       if np.absolute(pboc3) > 0.001:
+           self.onebody[line_number+2][5-1] = '<<pboc3_'+e1+'>>'
+           delta = bounds * np.absolute(pboc3)
+           self.params_write.append(['pboc3_'+e1, str(pboc3-delta), str(pboc3+delta)])
+
+       # pboc5
+       if np.absolute(pboc5) > 0.001:
+           self.onebody[line_number+2][6-1] = '<<pboc5_'+e1+'>>'
+           delta = bounds * np.absolute(pboc5)
+           self.params_write.append(['pboc5_'+e1, str(pboc5-delta), str(pboc5+delta)])
+
+       # povun2
+       self.onebody[line_number+3][1-1] = '<<povun2_'+e1+'>>'
+       delta = bounds * np.absolute(povun2)
+       self.params_write.append(['povun2_'+e1, str(povun2-delta), str(povun2+delta)])
+
+       # pval3
+       self.onebody[line_number+3][2-1] = '<<pval3_'+e1+'>>'
+       delta = bounds * np.absolute(pval3)
+       self.params_write.append(['pval3_'+e1, str(pval3-delta), str(pval3+delta)])
+
+       # pval5
+       self.onebody[line_number+3][5-1] = '<<pval5_'+e1+'>>'
+       delta = bounds * np.absolute(pval5)
+       self.params_write.append(['pval5_'+e1, str(pval5-delta), str(pval5+delta)])
+
+       return
+
+
+
+
     def _template_bond_order(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
         """
         Generate decision variables in the bond-order equation for bonds between two elements
@@ -410,7 +546,7 @@ class reax_forcefield:
 
 
 
-    def _template_bond_energy_vdW(self, e1, e2, f13 = False, bounds = 0.1):
+    def _template_bond_energy_vdW(self, e1, e2, bounds = 0.1):
         """
         Generate decision variables related to the two-body repulsive (i.e. van der Waals) term
 
@@ -422,9 +558,6 @@ class reax_forcefield:
 
         :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
         :type bounds: float
-
-        :param f13: Flag for the optimization of common variables
-        :type f13: bool
         """
         ie1, ie2 = self._get_element_number(e1), self._get_element_number(e2)
 
@@ -452,40 +585,12 @@ class reax_forcefield:
         self.offdiagonal[line_number][3+2-1] = '<<alpha_ij_'+e1+'_'+e2+'>>'
         self.params_write.append(['alpha_ij_'+e1+'_'+e2, str(alpha_ij-delta), str(alpha_ij+delta)])
 
-
-        ### WRITE PARAMETER IN F13
-        if f13:
-            # gamma_w in element 1 in onebody
-            for index, line in enumerate(self.onebody[4::4]):
-                if line[0].lower().upper() == e1.lower().upper():
-                    break
-            line_number = (4 + (4*index) + 1)
-
-            # gamma_w
-            gamma_w = float(self.onebody[line_number][10-8-1]) # 10th term, -8 for previous line, -1 for 0 indexing
-            delta = bounds * np.absolute(gamma_w)
-            self.onebody[line_number][3+2-1] = '<<gamma_w_'+e1+'>>'
-            self.params_write.append(['gamma_w_'+e1, str(gamma_w-delta), str(gamma_w+delta)])
-
-            # gamma_w in element 2 in onebody
-            for index, line in enumerate(self.onebody[4::4]):
-                if line[0].lower().upper() == e2.lower().upper():
-                    break
-            line_number = (4 + (4*index) + 1)
-
-            # gamma_w
-            gamma_w = float(self.onebody[line_number][10-8-1]) # 10th term, -8 for previous line, -1 for 0 indexing
-            delta = bounds * np.absolute(gamma_w)
-            self.onebody[line_number][3+2-1] = '<<gamma_w_'+e2+'>>'
-            self.params_write.append(['gamma_w_'+e2, str(gamma_w-delta), str(gamma_w+delta)])
-
-
-            # Pvdw1 in general parameters
-            line_number = 1 + 29  # 29th parameter, +1 for header line
-            P_vdW1 = float(self.general[line_number][0])
-            delta = bounds * np.absolute(P_vdW1)
-            self.general[line_number][0] = '<<PvdW>>'
-            self.params_write.append(['PvdW', str(P_vdW1-delta), str(P_vdW1+delta)])
+        #     # Pvdw1 in general parameters
+        #     line_number = 1 + 29  # 29th parameter, +1 for header line
+        #     P_vdW1 = float(self.general[line_number][0])
+        #     delta = bounds * np.absolute(P_vdW1)
+        #     self.general[line_number][0] = '<<PvdW>>'
+        #     self.params_write.append(['PvdW', str(P_vdW1-delta), str(P_vdW1+delta)])
 
 
 
@@ -595,7 +700,8 @@ class reax_forcefield:
         """
         with open(self.ranges, 'w') as ranges_file:
             for parameter in self.params_write:
-                ranges_file.write(' '.join(parameter) + '\n')
+                ranges_file.write("%18s %10.4f %10.4f \n" % (parameter[0], float(parameter[1]), float(parameter[2])))
+                #ranges_file.write(' '.join(parameter) + '\n')
 
         with open(self.template,'w') as template:
             template.write(self.header)
@@ -631,7 +737,23 @@ class reax_forcefield:
         return
 
 
-    def make_template_twobody(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1, common = False):
+    def make_template_onebody(self, e1, bounds=0.1):
+        """
+        Function to generate decision variables for all one-body terms (i.e. atomic radii, bond_order correction, under/overcoordination)
+
+        : param e1 : Chemical symbol for element 1
+        : type e1  : str
+
+        : param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
+        : type bounds: float
+
+        """
+        # GET ONE_BODY_PARAMETERS EXCEPT QEQ
+        self._template_onebody(e1,bounds)
+        return
+
+
+    def make_template_twobody(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
         """
         Function to generate decision variables for all two-body terms (i.e. bond-order, attractive and vdW) between two given elements
 
@@ -649,17 +771,20 @@ class reax_forcefield:
 
         :param triple_bond: Flag for the presence of a triple-bond between elements e1 and e2
         :type triple_bond: bool
-
-        :param common: Flag for the optimization of common parameters
-        :type common: bool
         """
+
+        # Modify One Body Parameters for each unique element
+        unique_elements = list(set([e1,e2]))
+        for element in unique_elements:
+            self._template_onebody(element, bounds=bounds)
+
         # GET BOND_ORDER_PARAMETERS
         self._template_bond_order(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
         self._template_bond_energy_attractive(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
-        self._template_bond_energy_vdW(e1,e2, f13 = common, bounds = bounds)
+        self._template_bond_energy_vdW(e1,e2,bounds = bounds)
         return
 
-    def make_template_threebody(self, e1, e2, e3, bounds = 0.1, common = False):
+    def make_template_threebody(self, e1, e2, e3, bounds = 0.1):
         """
         Function to generate decision variables for all three-body terms for a given triplet of elements
 
@@ -674,14 +799,11 @@ class reax_forcefield:
 
         :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
         :type bounds: float
-
-        :param common: Flag for the optimization of common parameters
-        :type common: bool
         """
         self._template_threebody_energy(e1, e2, e3, bounds = bounds)
         return
 
-    def make_template_fourbody(self, e1, e2, e3, e4, bounds = 0.1, common = False):
+    def make_template_fourbody(self, e1, e2, e3, e4, bounds = 0.1):
         """
         Function to generate decision variables for all four-body terms for a given quartet of elements
 
@@ -699,9 +821,6 @@ class reax_forcefield:
 
         :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
         :type bounds: float
-
-        :param common: Flag for the optimization of common parameters
-        :type common: bool
         """
         self._template_fourbody_energy(e1, e2, e3, e4, bounds = bounds)
         return
