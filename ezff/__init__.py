@@ -40,8 +40,7 @@ from mpi4py import MPI
 import multiprocessing
 
 
-
-__version__ = '1.0.2' # Update setup.py if version changes
+__version__ = '1.0.9' # Update setup.py if version changes
 
 
 class FFParam(object):
@@ -83,7 +82,7 @@ class FFParam(object):
         """
         self.forcefield_template = ffio.read_forcefield_template(template_filename)
 
-    def set_algorithm(self, algo_string, population_size = None):
+    def set_algorithm(self, algo_string, population_size = None, partial_grid = None, full_grid = None):
         """
         Set optimization algorithm. Initialize interfaces to external optimizers and return the algorithm object
 
@@ -92,6 +91,13 @@ class FFParam(object):
 
         :param population_size: Number of candidate forcefields evaluated every epoch
         :type algo_string: int
+
+        :param partial_grid: Number of grid points for a partial grid span
+        :type algo_string: int
+
+        :param full_grid: Number of grid points for a full grid span
+        :type algo_string: int
+
         """
 
         self.population_size = population_size
@@ -101,8 +107,25 @@ class FFParam(object):
         mobopt_algos = ['MOBO']
         pymoo_algos = ['NSGA2_MO_PYMOO', 'NSGA3_MO_PYMOO', 'UNSGA3_MO_PYMOO', 'CTAEA_MO_PYMOO', 'SMSEMOA_MO_PYMOO', 'RVEA_MO_PYMOO', 'ES_SO_PYMOO', 'NELDERMEAD_SO_PYMOO', 'CMAES_SO_PYMOO']
         platypus_algos = ['NSGA2_MO_PLATYPUS', 'NSGA3_MO_PLATYPUS', 'GDE3_MO_PLATYPUS']
+        self_algos = ['GRIDSPAN']
 
-        if algo_string.upper() in ng_algos:
+        if algo_string.upper() in self_algos:
+            self.algo_framework = 'self'
+            var_mins = []
+            var_maxs = []
+            for variable in self.variable_bounds.keys():
+                var_mins.append(self.variable_bounds[variable][0])
+                var_maxs.append(self.variable_bounds[variable][1])
+            self.var_mins = np.array(var_mins)
+            self.var_maxs = np.array(var_maxs)
+            self.var_delta = self.var_maxs - self.var_mins
+            self.full_grid = full_grid
+            if partial_grid is None:
+                self.partial_grid = 1
+            else:
+                self.partial_grid = partial_grid
+
+        elif algo_string.upper() in ng_algos:
             self.algo_framework = 'nevergrad'
             ng_variable_dict = ng.p.Dict()
             for variable in self.variable_bounds.keys():
@@ -294,7 +317,44 @@ class FFParam(object):
         Ask the optimization algorithm the next candidate variables for evaluation
         """
         new_variables = []
-        if self.algo_framework == 'nevergrad':
+
+        if self.algo_framework == 'self':
+            if self.full_grid is None:
+                num_fracts = (2*self.partial_grid) + 1
+                fract_disp = np.linspace(0,1,num_fracts)
+                fract_disp = np.delete(fract_disp, self.partial_grid)
+                span = [[0.5 for i in self.var_mins]]
+
+                for i in range(self.num_variables):
+                    for k in fract_disp:
+                        f = [0.5 for j in self.var_mins]
+                        f[i] = k
+                        span.append(f)
+
+            else:  # self.full_grid is finite
+                num_fracts = (2*self.full_grid) + 1
+                fract_disp = np.linspace(0,1,num_fracts)
+                fract_disp_ND = [fract_disp for x in self.var_mins]
+
+                full_grid_pos = np.meshgrid(*fract_disp_ND)
+                full_grid_pos = np.array(full_grid_pos)
+                flattened_indices = [x.flatten(order='C') for x in full_grid_pos]
+
+                span = []
+
+                for i in range(len(fract_disp)**len(self.var_mins)):
+                    h = [flattened_indices[a][i] for a in range(len(self.var_mins))]
+                    span.append(h)
+
+            new_variables = []
+            for fract_pos in span:
+                new_variable = self.var_mins + (self.var_delta * np.array(fract_pos))
+                new_variables.append(new_variable.tolist())
+
+            return new_variables
+
+
+        elif self.algo_framework == 'nevergrad':
             for i in range(self.population_size):
                 newvar = self.algorithm.ask()
                 new_var_as_list = np.array([newvar.value[self.variable_names[i]] for i in range(len(self.variable_names))])
@@ -396,7 +456,42 @@ class FFParam(object):
         :type pool: Multiprocessing or MPI Pool object
         """
         self.pool = pool
-        if self.algo_framework == 'nevergrad':
+
+
+        if self.algo_framework == 'self':
+            num_epochs = 1 # reset the number of epochs
+            for epoch in range(num_epochs):
+
+                self.total_epochs += 1
+                self.normalize_errors()
+
+                self.set_algorithm(algo_string = self.algo_string, partial_grid = self.partial_grid, full_grid = self.full_grid)
+
+                new_variables = self.ask()
+                new_errors = []
+
+                if self.pool is None:
+                    for variable in new_variables:
+                        variable_dict = dict(zip(self.variable_names, variable))
+                        error = self.error_function(variable_dict, self.forcefield_template)
+                        new_errors.append(error)
+                else:
+                    if self.pool_type == 'mpi':
+                        if not self.pool.is_master():
+                            pool.wait()
+
+                    variable_dict_list = [dict(zip(self.variable_names, variable)) for variable in new_variables]
+                    new_errors = self.pool.map(partial(self.error_function, template = self.forcefield_template), variable_dict_list)
+
+                for variable_id, variable in enumerate(new_variables):
+                    self.variables.append(variable)
+                    self.errors.append(new_errors[variable_id])
+
+                self._write_out_forcefields()
+
+
+
+        elif self.algo_framework == 'nevergrad':
             for epoch in range(num_epochs):
 
                 self.total_epochs += 1
@@ -591,7 +686,10 @@ class FFParam(object):
         """
         best_variables = None
         best_errors = None
-        if self.algo_framework == 'nevergrad':
+        if self.algo_framework == 'self':
+            best_variables = self.variables
+            best_errors = self.errors
+        elif self.algo_framework == 'nevergrad':
             best_recommendation = self.algorithm.provide_recommendation()
             best_variables = best_recommendation.value
             best_errors = best_recommendation.loss
