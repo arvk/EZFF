@@ -696,8 +696,10 @@ class reax_forcefield:
         """
         with open(self.ranges, 'w') as ranges_file:
             for parameter in self.params_write:
-                ranges_file.write("%18s %10.4f %10.4f \n" % (parameter[0], float(parameter[1]), float(parameter[2])))
-                #ranges_file.write(' '.join(parameter) + '\n')
+                lower_bound_var, upper_bound_var = float(parameter[1]), float(parameter[2])
+                if lower_bound_var == upper_bound_var:
+                    lower_bound_var, upper_bound_var = 0.0, 1.0
+                ranges_file.write("%18s %10.4f %10.4f \n" % (parameter[0], lower_bound_var, upper_bound_var))
 
         with open(self.template,'w') as template:
             template.write(self.header)
