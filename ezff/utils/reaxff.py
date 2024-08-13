@@ -371,16 +371,14 @@ class reax_forcefield:
         # ro_sigma
         for index, line in enumerate(self.offdiagonal[1:]):
             if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                line_number = (1 + (1*index))
+                # ro_sigma
+                ro_sigma = float(self.offdiagonal[line_number][4+2-1])  # 4th term, +2 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(ro_sigma)
+                self.offdiagonal[line_number][4+2-1] = '<<ro_sigma_'+e1+'_'+e2+'>>'
+                self.params_write.append(['ro_sigma_'+e1+'_'+e2, str(ro_sigma-delta), str(ro_sigma+delta)])
+
                 break
-        line_number = (1 + (1*index))
-
-        # ro_sigma
-        ro_sigma = float(self.offdiagonal[line_number][4+2-1])  # 4th term, +2 for atom indices, -1 for 0 indexing
-        delta = bounds * np.absolute(ro_sigma)
-        self.offdiagonal[line_number][4+2-1] = '<<ro_sigma_'+e1+'_'+e2+'>>'
-        self.params_write.append(['ro_sigma_'+e1+'_'+e2, str(ro_sigma-delta), str(ro_sigma+delta)])
-
-
 
         #-------------------#
         #--- DOUBLE BOND ---#
@@ -407,15 +405,14 @@ class reax_forcefield:
             # ro_pi
             for index, line in enumerate(self.offdiagonal[1:]):
                 if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                    line_number = (1 + (1*index))
+                    # ro_pi
+                    ro_pi = float(self.offdiagonal[line_number][5+2-1])  # 4th term, +2 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(ro_pi)
+                    self.offdiagonal[line_number][5+2-1] = '<<ro_pi_'+e1+'_'+e2+'>>'
+                    self.params_write.append(['ro_pi_'+e1+'_'+e2, str(ro_pi-delta), str(ro_pi+delta)])
+
                     break
-            line_number = (1 + (1*index))
-
-            # ro_pi
-            ro_pi = float(self.offdiagonal[line_number][5+2-1])  # 4th term, +2 for atom indices, -1 for 0 indexing
-            delta = bounds * np.absolute(ro_pi)
-            self.offdiagonal[line_number][5+2-1] = '<<ro_pi_'+e1+'_'+e2+'>>'
-            self.params_write.append(['ro_pi_'+e1+'_'+e2, str(ro_pi-delta), str(ro_pi+delta)])
-
 
         #-------------------#
         #--- TRIPLE BOND ---#
@@ -442,14 +439,14 @@ class reax_forcefield:
             # ro_pipi
             for index, line in enumerate(self.offdiagonal[1:]):
                 if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
-                    break
-            line_number = (1 + (1*index))
+                    line_number = (1 + (1*index))
+                    # ro_pipi
+                    ro_pipi = float(self.offdiagonal[line_number][6+2-1]) # 6th term, +2 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(ro_pipi)
+                    self.offdiagonal[line_number][6+2-1] = '<<ro_pipi_'+e1+'_'+e2+'>>'
+                    self.params_write.append(['ro_pipi_'+e1+'_'+e2, str(ro_pipi-delta), str(ro_pipi+delta)])
 
-            # ro_pipi
-            ro_pipi = float(self.offdiagonal[line_number][6+2-1]) # 6th term, +2 for atom indices, -1 for 0 indexing
-            delta = bounds * np.absolute(ro_pipi)
-            self.offdiagonal[line_number][6+2-1] = '<<ro_pipi_'+e1+'_'+e2+'>>'
-            self.params_write.append(['ro_pipi_'+e1+'_'+e2, str(ro_pipi-delta), str(ro_pipi+delta)])
+                    break
 
         return
 
@@ -564,35 +561,34 @@ class reax_forcefield:
         # Dij, rvdWm alpha_ij in off-diagonal
         for index, line in enumerate(self.offdiagonal[1:]):
             if (int(line[0]) == ie1 and int(line[1]) == ie2) or (int(line[0]) == ie2 and int(line[1]) == ie1):
+                line_number = (1 + (1*index))
+
+                # Dij
+                Dij = float(self.offdiagonal[line_number][1+2-1]) # 1st term, +2 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Dij)
+                self.offdiagonal[line_number][1+2-1] = '<<Dij_'+e1+'_'+e2+'>>'
+                self.params_write.append(['Dij_'+e1+'_'+e2, str(Dij-delta), str(Dij+delta)])
+
+                # rvdW
+                rvdW = float(self.offdiagonal[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(rvdW)
+                self.offdiagonal[line_number][2+2-1] = '<<rvdW_'+e1+'_'+e2+'>>'
+                self.params_write.append(['rvdW_'+e1+'_'+e2, str(rvdW-delta), str(rvdW+delta)])
+
+                # alpha_ij
+                alpha_ij = float(self.offdiagonal[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(alpha_ij)
+                self.offdiagonal[line_number][3+2-1] = '<<alpha_ij_'+e1+'_'+e2+'>>'
+                self.params_write.append(['alpha_ij_'+e1+'_'+e2, str(alpha_ij-delta), str(alpha_ij+delta)])
+
+                #     # Pvdw1 in general parameters
+                #     line_number = 1 + 29  # 29th parameter, +1 for header line
+                #     P_vdW1 = float(self.general[line_number][0])
+                #     delta = bounds * np.absolute(P_vdW1)
+                #     self.general[line_number][0] = '<<PvdW>>'
+                #     self.params_write.append(['PvdW', str(P_vdW1-delta), str(P_vdW1+delta)])
+
                 break
-        line_number = (1 + (1*index))
-
-        # Dij
-        Dij = float(self.offdiagonal[line_number][1+2-1]) # 1st term, +2 for atom indices, -1 for 0 indexing
-        delta = bounds * np.absolute(Dij)
-        self.offdiagonal[line_number][1+2-1] = '<<Dij_'+e1+'_'+e2+'>>'
-        self.params_write.append(['Dij_'+e1+'_'+e2, str(Dij-delta), str(Dij+delta)])
-
-        # rvdW
-        rvdW = float(self.offdiagonal[line_number][2+2-1]) # 2nd term, +2 for atom indices, -1 for 0 indexing
-        delta = bounds * np.absolute(rvdW)
-        self.offdiagonal[line_number][2+2-1] = '<<rvdW_'+e1+'_'+e2+'>>'
-        self.params_write.append(['rvdW_'+e1+'_'+e2, str(rvdW-delta), str(rvdW+delta)])
-
-        # alpha_ij
-        alpha_ij = float(self.offdiagonal[line_number][3+2-1]) # 3rd term, +2 for atom indices, -1 for 0 indexing
-        delta = bounds * np.absolute(alpha_ij)
-        self.offdiagonal[line_number][3+2-1] = '<<alpha_ij_'+e1+'_'+e2+'>>'
-        self.params_write.append(['alpha_ij_'+e1+'_'+e2, str(alpha_ij-delta), str(alpha_ij+delta)])
-
-        #     # Pvdw1 in general parameters
-        #     line_number = 1 + 29  # 29th parameter, +1 for header line
-        #     P_vdW1 = float(self.general[line_number][0])
-        #     delta = bounds * np.absolute(P_vdW1)
-        #     self.general[line_number][0] = '<<PvdW>>'
-        #     self.params_write.append(['PvdW', str(P_vdW1-delta), str(P_vdW1+delta)])
-
-
 
 
 
