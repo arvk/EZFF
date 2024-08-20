@@ -751,7 +751,7 @@ class reax_forcefield:
         return
 
 
-    def make_template_twobody(self, e1, e2, double_bond = False, triple_bond = False, bounds = 0.1):
+    def make_template_twobody(self, e1, e2, double_bond = False, triple_bond = False, make_onebody = False, bounds = 0.1):
         """
         Function to generate decision variables for all two-body terms (i.e. bond-order, attractive and vdW) between two given elements
 
@@ -773,8 +773,9 @@ class reax_forcefield:
 
         # Modify One Body Parameters for each unique element
         unique_elements = list(set([e1,e2]))
-        for element in unique_elements:
-            self._template_onebody(element, bounds=bounds)
+        if make_onebody:
+            for element in unique_elements:
+                self._template_onebody(element, bounds=bounds)
 
         # GET BOND_ORDER_PARAMETERS
         self._template_bond_order(e1,e2,double_bond = double_bond, triple_bond = triple_bond, bounds = bounds)
