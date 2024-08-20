@@ -321,7 +321,7 @@ class FFParam(object):
         if self.algo_framework == 'self':
             if self.full_grid is None:
                 num_fracts = (2*self.partial_grid) + 1
-                fract_disp = np.linspace(0,1,num_fracts)
+                fract_disp = np.linspace(0.0001,0.9999,num_fracts)
                 fract_disp = np.delete(fract_disp, self.partial_grid)
                 span = [[0.5 for i in self.var_mins]]
 
@@ -333,7 +333,7 @@ class FFParam(object):
 
             else:  # self.full_grid is finite
                 num_fracts = (2*self.full_grid) + 1
-                fract_disp = np.linspace(0,1,num_fracts)
+                fract_disp = np.linspace(0.0001,0.9999,num_fracts)
                 fract_disp_ND = [fract_disp for x in self.var_mins]
 
                 full_grid_pos = np.meshgrid(*fract_disp_ND)
