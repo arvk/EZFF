@@ -611,7 +611,7 @@ class reax_forcefield:
         :param bounds: Maximum deviation allowed for each decision variable from its current value in the forcefield
         :type bounds: float
         """
-        # theta0, Pval1, Pval2 in threebody
+        # theta0, Pval1, Pval2, Pval7, Ppen1, Pval4 in threebody
         for triplet in list(set(list(itertools.permutations([e1,e2,e3])))):
             ie1 = self._get_element_number(triplet[0])
             ie2 = self._get_element_number(triplet[1])
@@ -634,6 +634,21 @@ class reax_forcefield:
                     delta = bounds * np.absolute(Pval2)
                     self.threebody[line_number][3+3-1] = '<<Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
                     self.params_write.append(['Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval2-delta), str(Pval2+delta)])
+
+                    Pval7 = float(self.threebody[line_number][5+3-1]) # 5th term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(Pval7)
+                    self.threebody[line_number][5+3-1] = '<<Pval7_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                    self.params_write.append(['Pval7_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval7-delta), str(Pval7+delta)])
+
+                    Ppen1 = float(self.threebody[line_number][6+3-1]) # 6th term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(Ppen1)
+                    self.threebody[line_number][6+3-1] = '<<Ppen1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                    self.params_write.append(['Ppen1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Ppen1-delta), str(Ppen1+delta)])
+
+                    Pval4 = float(self.threebody[line_number][7+3-1]) # 7th term, +3 for atom indices, -1 for 0 indexing
+                    delta = bounds * np.absolute(Pval4)
+                    self.threebody[line_number][7+3-1] = '<<Pval4_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                    self.params_write.append(['Pval4_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval4-delta), str(Pval4+delta)])
 
 
 
