@@ -612,43 +612,43 @@ class reax_forcefield:
         :type bounds: float
         """
         # theta0, Pval1, Pval2, Pval7, Ppen1, Pval4 in threebody
-        for triplet in list(set(list(itertools.permutations([e1,e2,e3])))):
-            ie1 = self._get_element_number(triplet[0])
-            ie2 = self._get_element_number(triplet[1])
-            ie3 = self._get_element_number(triplet[2])
-            for index, line in enumerate(self.threebody[1:]):
-                if int(line[0]) == ie1 and int(line[1]) == ie2 and int(line[2]) == ie3:
-                    line_number = (1 + (1*index))
+        triplet = [e1,e2,e3]
+        ie1 = self._get_element_number(triplet[0])
+        ie2 = self._get_element_number(triplet[1])
+        ie3 = self._get_element_number(triplet[2])
+        for index, line in enumerate(self.threebody[1:]):
+            if int(line[0]) == ie1 and int(line[1]) == ie2 and int(line[2]) == ie3:
+                line_number = (1 + (1*index))
 
-                    theta0 = float(self.threebody[line_number][1+3-1]) # 1st term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(theta0)
-                    self.threebody[line_number][1+3-1] = '<<theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(theta0-delta), str(theta0+delta)])
+                theta0 = float(self.threebody[line_number][1+3-1]) # 1st term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(theta0)
+                self.threebody[line_number][1+3-1] = '<<theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                self.params_write.append(['theta0_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(theta0-delta), str(theta0+delta)])
 
-                    Pval1 = float(self.threebody[line_number][2+3-1]) # 2nd term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(Pval1)
-                    self.threebody[line_number][2+3-1] = '<<Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval1-delta), str(Pval1+delta)])
+                Pval1 = float(self.threebody[line_number][2+3-1]) # 2nd term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Pval1)
+                self.threebody[line_number][2+3-1] = '<<Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                self.params_write.append(['Pval1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval1-delta), str(Pval1+delta)])
 
-                    Pval2 = float(self.threebody[line_number][3+3-1]) # 3rd term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(Pval2)
-                    self.threebody[line_number][3+3-1] = '<<Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval2-delta), str(Pval2+delta)])
+                Pval2 = float(self.threebody[line_number][3+3-1]) # 3rd term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Pval2)
+                self.threebody[line_number][3+3-1] = '<<Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                self.params_write.append(['Pval2_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval2-delta), str(Pval2+delta)])
 
-                    Pval7 = float(self.threebody[line_number][5+3-1]) # 5th term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(Pval7)
-                    self.threebody[line_number][5+3-1] = '<<Pval7_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Pval7_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval7-delta), str(Pval7+delta)])
+                Pval7 = float(self.threebody[line_number][5+3-1]) # 5th term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Pval7)
+                self.threebody[line_number][5+3-1] = '<<Pval7_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                self.params_write.append(['Pval7_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval7-delta), str(Pval7+delta)])
 
-                    Ppen1 = float(self.threebody[line_number][6+3-1]) # 6th term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(Ppen1)
-                    self.threebody[line_number][6+3-1] = '<<Ppen1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Ppen1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Ppen1-delta), str(Ppen1+delta)])
+                Ppen1 = float(self.threebody[line_number][6+3-1]) # 6th term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Ppen1)
+                self.threebody[line_number][6+3-1] = '<<Ppen1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                self.params_write.append(['Ppen1_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Ppen1-delta), str(Ppen1+delta)])
 
-                    Pval4 = float(self.threebody[line_number][7+3-1]) # 7th term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(Pval4)
-                    self.threebody[line_number][7+3-1] = '<<Pval4_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
-                    self.params_write.append(['Pval4_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval4-delta), str(Pval4+delta)])
+                Pval4 = float(self.threebody[line_number][7+3-1]) # 7th term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Pval4)
+                self.threebody[line_number][7+3-1] = '<<Pval4_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2]+'>>'
+                self.params_write.append(['Pval4_'+triplet[0]+'_'+triplet[1]+'_'+triplet[2], str(Pval4-delta), str(Pval4+delta)])
 
 
 
@@ -673,35 +673,35 @@ class reax_forcefield:
         :type bounds: float
         """
         # V1, V2, V3, Ptor1 in fourbody
-        for quartet in list(set(list(itertools.permutations([e1,e2,e3,e4])))):
-            ie1 = self._get_element_number(quartet[0])
-            ie2 = self._get_element_number(quartet[1])
-            ie3 = self._get_element_number(quartet[2])
-            ie4 = self._get_element_number(quartet[3])
+        quartet = [e1, e2, e3, e4]
+        ie1 = self._get_element_number(quartet[0])
+        ie2 = self._get_element_number(quartet[1])
+        ie3 = self._get_element_number(quartet[2])
+        ie4 = self._get_element_number(quartet[3])
 
-            for index, line in enumerate(self.fourbody[1:]):
-                if int(line[0]) == ie1 and int(line[1]) == ie2 and int(line[2]) == ie3 and int(line[3]) == ie4:
-                    line_number = (1 + (1*index))
+        for index, line in enumerate(self.fourbody[1:]):
+            if int(line[0]) == ie1 and int(line[1]) == ie2 and int(line[2]) == ie3 and int(line[3]) == ie4:
+                line_number = (1 + (1*index))
 
-                    V1 = float(self.fourbody[line_number][1+4-1]) # 1st term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(V1)
-                    self.fourbody[line_number][1+4-1] = '<<V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V1-delta), str(V1+delta)])
+                V1 = float(self.fourbody[line_number][1+4-1]) # 1st term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(V1)
+                self.fourbody[line_number][1+4-1] = '<<V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
+                self.params_write.append(['V1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V1-delta), str(V1+delta)])
 
-                    V2 = float(self.fourbody[line_number][2+4-1]) # 2nd term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(V2)
-                    self.fourbody[line_number][2+4-1] = '<<V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V2-delta), str(V2+delta)])
+                V2 = float(self.fourbody[line_number][2+4-1]) # 2nd term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(V2)
+                self.fourbody[line_number][2+4-1] = '<<V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
+                self.params_write.append(['V2_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V2-delta), str(V2+delta)])
 
-                    V3 = float(self.fourbody[line_number][3+4-1]) # 3rd term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(V3)
-                    self.fourbody[line_number][3+4-1] = '<<V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V3-delta), str(V3+delta)])
+                V3 = float(self.fourbody[line_number][3+4-1]) # 3rd term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(V3)
+                self.fourbody[line_number][3+4-1] = '<<V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
+                self.params_write.append(['V3_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(V3-delta), str(V3+delta)])
 
-                    Ptor1 = float(self.fourbody[line_number][4+4-1]) # 4th term, +3 for atom indices, -1 for 0 indexing
-                    delta = bounds * np.absolute(Ptor1)
-                    self.fourbody[line_number][4+4-1] = '<<Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
-                    self.params_write.append(['Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(Ptor1-delta), str(Ptor1+delta)])
+                Ptor1 = float(self.fourbody[line_number][4+4-1]) # 4th term, +3 for atom indices, -1 for 0 indexing
+                delta = bounds * np.absolute(Ptor1)
+                self.fourbody[line_number][4+4-1] = '<<Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3]+'>>'
+                self.params_write.append(['Ptor1_'+quartet[0]+'_'+quartet[1]+'_'+quartet[2]+'_'+quartet[3], str(Ptor1-delta), str(Ptor1+delta)])
 
 
 
