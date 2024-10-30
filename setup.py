@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='EZFF',
-      version='1.0.9', # Update __init__.py if the version changes!
+      version='1.0.10', # Update __init__.py if the version changes!
       description='Multiobjective forcefield optimization for Molecular Dynamics',
       author='Aravind Krishnamoorthy',
       author_email='arvk@users.noreply.github.com',

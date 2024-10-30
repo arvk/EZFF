@@ -40,7 +40,7 @@ from mpi4py import MPI
 import multiprocessing
 
 
-__version__ = '1.0.9' # Update setup.py if version changes
+__version__ = '1.0.10' # Update setup.py if version changes
 
 
 class FFParam(object):
